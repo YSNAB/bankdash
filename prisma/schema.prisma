@@ -7,7 +7,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  schemas  = ["rydash"]
 }
 
 // User authentication model
@@ -18,6 +17,49 @@ model User {
   name      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
 
-  @@schema("rydash")
+// Products model
+model Product {
+  id              Int              @id @default(autoincrement())
+  name            String
+  ean             String?
+  stock           Int
+  purchaseDetails PurchaseDetail[] @relation("ProductToPurchaseDetail")
+
+  @@map("products")
+}
+
+// Suppliers model
+model Supplier {
+  id        Int        @id @default(autoincrement())
+  name      String
+  purchases Purchase[] @relation("SupplierToPurchase")
+
+  @@map("suppliers")
+}
+
+// Purchases (orders) model
+model Purchase {
+  id              Int              @id @default(autoincrement())
+  supplierId      Int              @map("supplier_id")
+  date            DateTime         @db.Timestamptz(6)
+  supplier        Supplier         @relation("SupplierToPurchase", fields: [supplierId], references: [id])
+  purchaseDetails PurchaseDetail[] @relation("PurchaseToPurchaseDetail")
+
+  @@map("purchases")
+}
+
+// Purchase details (order line items) model
+model PurchaseDetail {
+  id        Int      @id @default(autoincrement())
+  orderId   Int      @map("order_id")
+  productId Int      @map("product_id")
+  quantity  Int
+  price     Float
+  type      String?
+  purchase  Purchase @relation("PurchaseToPurchaseDetail", fields: [orderId], references: [id])
+  product   Product  @relation("ProductToPurchaseDetail", fields: [productId], references: [id])
+
+  @@map("purchase_details")
 }

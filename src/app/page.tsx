@@ -1,32 +1,59 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
+  const router = useRouter()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    setIsLoading(true)
     
-    // TODO: Implement login logic
-    console.log('Login attempt:', { username, password })
+    console.log('Starting login with:', username)
     
-    // Example: You'll implement actual authentication later
-    if (!username || !password) {
-      setError('Please enter both username and password')
-      return
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      })
+
+      console.log('Response status:', response.status)
+      const data = await response.json()
+      console.log('Response data:', data)
+
+      if (!response.ok) {
+        setError(data.error || 'Login failed')
+        setIsLoading(false)
+        return
+      }
+
+      // Store user data in localStorage
+      localStorage.setItem('user', JSON.stringify(data.user))
+      
+      // Redirect to dashboard
+      router.push('/dashboard')
+    } catch (err) {
+      console.error('Login error:', err)
+      setError('An error occurred. Please try again.')
+      setIsLoading(false)
     }
   }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-zinc-950">
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-lg">
         <div className="bg-white dark:bg-zinc-900 shadow-lg rounded-lg px-8 py-10">
           <div className="mb-8 text-center">
-            <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">Welcome Back</h1>
+            <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">Welcome to Phonebank Admin</h1>
             <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
               Sign in to your account
             </p>
@@ -77,9 +104,10 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              className="w-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-medium py-2.5 rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2"
+              disabled={isLoading}
+              className="w-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-medium py-2.5 rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Sign In
+              {isLoading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
 

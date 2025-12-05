@@ -29,10 +29,6 @@ npm install
 DATABASE_URL="postgresql://user:password@localhost:5432/mydb"
 ```
 
-Or use Prisma's local development database:
-```bash
-npx prisma dev
-```
 
 3. Generate Prisma Client:
 ```bash
