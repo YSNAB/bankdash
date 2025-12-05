@@ -1,30 +1,23 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  schemas  = ["rydash"]
 }
 
-// Voorbeeld model - pas dit aan naar jouw behoeften
+// User authentication model
 model User {
   id        String   @id @default(cuid())
-  email     String   @unique
+  username  String   @unique
+  password  String   // Store hashed password (use bcrypt)
   name      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  posts     Post[]
-}
 
-model Post {
-  id        String   @id @default(cuid())
-  title     String
-  content   String?
-  published Boolean  @default(false)
-  views     Int      @default(0)
-  author    User     @relation(fields: [authorId], references: [id])
-  authorId  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  @@schema("rydash")
 }
