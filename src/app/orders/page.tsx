@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { formatPrice } from '@/lib/formatPrice'
 
 interface Customer {
   id: number
@@ -66,8 +67,12 @@ export default function OrdersPage() {
     router.push('/')
   }
 
+  const calculateTotalNumber = (details: OrderDetail[]) => {
+    return details.reduce((sum, item) => sum + (item.quantity * item.price), 0)
+  }
+
   const calculateTotal = (details: OrderDetail[]) => {
-    return details.reduce((sum, item) => sum + (item.quantity * item.price), 0).toFixed(2)
+    return formatPrice(calculateTotalNumber(details))
   }
 
   const deleteOrder = async (e: React.MouseEvent, id: number) => {
@@ -209,15 +214,15 @@ export default function OrdersPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
                         <span className={`px-3 py-1.5 rounded-xl text-xs font-semibold shadow-sm ${
-                          parseFloat(calculateTotal(order.orderDetails)) <= order.paidAmount
+                          calculateTotalNumber(order.orderDetails) <= order.paidAmount
                             ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white' 
                             : 'bg-gradient-to-r from-red-500 to-rose-600 text-white'
                         }`}>
-                          {parseFloat(calculateTotal(order.orderDetails)) <= order.paidAmount ? 'Paid' : 'Open'}
+                          {calculateTotalNumber(order.orderDetails) <= order.paidAmount ? 'Paid' : 'Open'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-green-700 dark:text-green-400">
-                        €{calculateTotal(order.orderDetails)}
+                        {calculateTotal(order.orderDetails)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
                         <button

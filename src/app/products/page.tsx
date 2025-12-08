@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import * as XLSX from 'xlsx'
+import { formatPrice } from '@/lib/formatPrice'
 
 interface Product {
   id: number
@@ -97,7 +98,7 @@ export default function ProductsPage() {
       'Name': product.name,
       'EAN': product.ean || '',
       'Current Stock': product.currentStock,
-      'Avg Purchase Price': `€${product.avgPurchasePrice.toFixed(2)}`,
+      'Avg Purchase Price': formatPrice(product.avgPurchasePrice),
     }))
 
     // Create worksheet
@@ -319,7 +320,7 @@ export default function ProductsPage() {
                         {product.minimalStock || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-green-700 dark:text-green-400">
-                        €{product.avgPurchasePrice.toFixed(2)}
+                        {formatPrice(product.avgPurchasePrice)}
                       </td>
                     </tr>
                   ))}

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { formatPrice } from '@/lib/formatPrice'
 
 interface LowStockProduct {
   id: number
@@ -376,7 +377,7 @@ export default function DashboardPage() {
                     padding: '12px',
                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                   }}
-                  formatter={(value: number) => [`€${value.toFixed(2)}`, '']}
+                  formatter={(value: number) => [formatPrice(value), '']}
                   labelStyle={{ color: '#1e293b', fontWeight: 'bold', marginBottom: '8px' }}
                 />
                 <Legend 

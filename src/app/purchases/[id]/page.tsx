@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import { formatPrice } from '@/lib/formatPrice'
 
 interface Supplier {
   id: number
@@ -420,7 +421,7 @@ export default function EditPurchasePage() {
 
                     <div className="flex justify-between items-center pt-4 border-t-2 border-slate-200 dark:border-slate-700">
                       <div className="text-lg font-bold text-slate-900 dark:text-white">
-                        Subtotal: €{((parseFloat(item.quantity) || 0) * (parseFloat(item.price) || 0)).toFixed(2)}
+                        Subtotal: {formatPrice((parseFloat(item.quantity) || 0) * (parseFloat(item.price) || 0))}
                       </div>
                       <button
                         type="button"
@@ -437,7 +438,7 @@ export default function EditPurchasePage() {
 
             <div className="mt-6 flex justify-end">
               <div className="text-2xl font-bold text-slate-900 dark:text-white">
-                Total: €{calculateTotal()}
+                Total: {formatPrice(parseFloat(calculateTotal()))}
               </div>
             </div>
           </div>

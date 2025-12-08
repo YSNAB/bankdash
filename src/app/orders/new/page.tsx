@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { formatPrice } from '@/lib/formatPrice'
 
 interface Customer {
   id: number
@@ -176,6 +177,14 @@ export default function NewOrderPage() {
     const paymentTypeLabel = paymentType === 'cash' ? 'Cash' : 'Factuur'
     const isPaid = parseFloat(paidAmount) >= parseFloat(total)
     
+    // Format items for printing
+    const formattedItems = items.map(item => ({
+      name: item.productName,
+      quantity: item.quantity,
+      price: formatPrice(parseFloat(item.price)),
+      subtotal: formatPrice((parseFloat(item.quantity) || 0) * (parseFloat(item.price) || 0))
+    }))
+    
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
@@ -319,12 +328,12 @@ export default function NewOrderPage() {
             </tr>
           </thead>
           <tbody>
-            ${items.map(item => `
+            ${formattedItems.map(item => `
               <tr>
-                <td>${item.productName}</td>
+                <td>${item.name}</td>
                 <td class="right">${item.quantity}</td>
-                <td class="right">€${parseFloat(item.price).toFixed(2)}</td>
-                <td class="right">€${((parseFloat(item.quantity) || 0) * (parseFloat(item.price) || 0)).toFixed(2)}</td>
+                <td class="right">${item.price}</td>
+                <td class="right">${item.subtotal}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -333,15 +342,15 @@ export default function NewOrderPage() {
         <div class="totals">
           <div class="totals-row total">
             <div class="totals-label">Total:</div>
-            <div class="totals-value">€${total}</div>
+            <div class="totals-value">${formatPrice(parseFloat(total))}</div>
           </div>
           <div class="totals-row">
             <div class="totals-label">Paid Amount:</div>
-            <div class="totals-value">€${parseFloat(paidAmount || '0').toFixed(2)}</div>
+            <div class="totals-value">${formatPrice(parseFloat(paidAmount || '0'))}</div>
           </div>
           <div class="totals-row" style="font-weight: bold; color: ${isPaid ? '#22c55e' : '#ef4444'};">
             <div class="totals-label">Balance:</div>
-            <div class="totals-value">€${(parseFloat(total) - parseFloat(paidAmount || '0')).toFixed(2)}</div>
+            <div class="totals-value">${formatPrice(parseFloat(total) - parseFloat(paidAmount || '0'))}</div>
           </div>
         </div>
 
@@ -618,7 +627,7 @@ export default function NewOrderPage() {
             <div className="mt-8 pt-6 border-t border-white/20 dark:border-slate-700/50">
               <div className="flex justify-between items-center text-xl font-bold mb-4">
                 <span className="text-slate-900 dark:text-white">Total:</span>
-                <span className="text-green-700 dark:text-green-400">€{calculateTotal()}</span>
+                <span className="text-green-700 dark:text-green-400">{formatPrice(parseFloat(calculateTotal()))}</span>
               </div>
               <div className="flex justify-between items-center gap-4">
                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300">

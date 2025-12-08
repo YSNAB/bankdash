@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { formatPrice } from '@/lib/formatPrice'
 
 interface Supplier {
   id: number
@@ -65,7 +66,8 @@ export default function PurchasesPage() {
   }
 
   const calculateTotal = (details: PurchaseDetail[]) => {
-    return details.reduce((sum, item) => sum + (item.quantity * item.price), 0).toFixed(2)
+    const total = details.reduce((sum, item) => sum + (item.quantity * item.price), 0)
+    return formatPrice(total)
   }
 
   const deletePurchase = async (e: React.MouseEvent, id: number) => {
@@ -191,7 +193,7 @@ export default function PurchasesPage() {
                         {purchase.supplier.name}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-green-700 dark:text-green-400">
-                        €{calculateTotal(purchase.purchaseDetails)}
+                        {calculateTotal(purchase.purchaseDetails)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
                         <button

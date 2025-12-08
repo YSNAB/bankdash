@@ -403,7 +403,7 @@ export default function NewPurchasePage() {
                 <div className="text-right">
                   <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">Total</p>
                   <p className="text-2xl font-bold text-green-700 dark:text-green-400">
-                    €{calculateTotal()}
+                    {calculateTotal()}
                   </p>
                 </div>
               </div>
