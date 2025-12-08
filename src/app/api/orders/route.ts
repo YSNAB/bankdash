@@ -95,9 +95,9 @@ export async function DELETE(request: Request) {
 // POST create new order
 export async function POST(request: Request) {
   try {
-    const { customerId, date, paymentType, items } = await request.json()
+    const { customerId, date, paymentType, paidAmount, items } = await request.json()
 
-    console.log('Creating order:', { customerId, date, paymentType, items })
+    console.log('Creating order:', { customerId, date, paymentType, paidAmount, items })
 
     if (!customerId || !date || !paymentType || !items || items.length === 0) {
       return NextResponse.json(
@@ -114,6 +114,7 @@ export async function POST(request: Request) {
           customerId: parseInt(customerId),
           date: new Date(date),
           paymentType,
+          paidAmount: paidAmount || 0,
           orderDetails: {
             create: items.map((item: any) => ({
               productId: parseInt(item.productId),

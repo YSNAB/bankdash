@@ -28,6 +28,7 @@ export default function NewOrderPage() {
   const [customerId, setCustomerId] = useState('')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [paymentType, setPaymentType] = useState('cash')
+  const [paidAmount, setPaidAmount] = useState('')
   const [items, setItems] = useState<OrderItem[]>([
     { productId: '', productName: '', quantity: '', price: '' }
   ])
@@ -196,6 +197,7 @@ export default function NewOrderPage() {
           customerId,
           date,
           paymentType,
+          paidAmount: parseFloat(paidAmount) || 0,
           items: validItems,
         }),
       })
@@ -414,9 +416,23 @@ export default function NewOrderPage() {
             </div>
 
             <div className="mt-8 pt-6 border-t border-white/20 dark:border-slate-700/50">
-              <div className="flex justify-between items-center text-xl font-bold">
+              <div className="flex justify-between items-center text-xl font-bold mb-4">
                 <span className="text-slate-900 dark:text-white">Total:</span>
                 <span className="text-green-700 dark:text-green-400">€{calculateTotal()}</span>
+              </div>
+              <div className="flex justify-between items-center gap-4">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Paid Amount:
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={paidAmount}
+                  onChange={(e) => setPaidAmount(e.target.value)}
+                  placeholder="0.00"
+                  className="w-48 px-4 py-2 bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white transition-all shadow-sm"
+                  min="0"
+                />
               </div>
             </div>
           </div>

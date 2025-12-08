@@ -82,6 +82,7 @@ model Order {
   customerId  Int           @map("customer_id")
   date        DateTime      @db.Timestamptz(6)
   paymentType String        @map("payment_type") // "cash" or "factuur"
+  paidAmount  Float         @default(0) @map("paid_amount")
   customer    Customer      @relation("CustomerToOrder", fields: [customerId], references: [id])
   orderDetails OrderDetail[] @relation("OrderToOrderDetail")
 

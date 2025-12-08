@@ -26,6 +26,7 @@ interface Order {
   customer: Customer
   date: string
   paymentType: string
+  paidAmount: number
   orderDetails: OrderDetail[]
 }
 
@@ -170,6 +171,9 @@ export default function OrdersPage() {
                     <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                       Payment
                     </th>
+                    <th className="px-6 py-4 text-center text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                      Status
+                    </th>
                     <th className="px-6 py-4 text-right text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                       Total
                     </th>
@@ -201,6 +205,15 @@ export default function OrdersPage() {
                             : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white'
                         }`}>
                           {order.paymentType === 'cash' ? 'Cash' : 'Factuur'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                        <span className={`px-3 py-1.5 rounded-xl text-xs font-semibold shadow-sm ${
+                          parseFloat(calculateTotal(order.orderDetails)) <= order.paidAmount
+                            ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white' 
+                            : 'bg-gradient-to-r from-red-500 to-rose-600 text-white'
+                        }`}>
+                          {parseFloat(calculateTotal(order.orderDetails)) <= order.paidAmount ? 'Paid' : 'Open'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-green-700 dark:text-green-400">
