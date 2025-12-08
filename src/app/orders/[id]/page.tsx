@@ -78,20 +78,20 @@ export default function OrderDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950">
-        <div className="text-zinc-600 dark:text-zinc-400">Loading...</div>
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+        <div className="text-slate-600 dark:text-slate-400 text-lg">Loading...</div>
       </div>
     )
   }
 
   if (error || !order) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950">
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
         <div className="text-center">
           <p className="text-red-600 dark:text-red-400 mb-4">{error || 'Order not found'}</p>
           <button
             onClick={() => router.push('/orders')}
-            className="px-4 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-lg"
+            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all font-medium"
           >
             Back to Orders
           </button>
@@ -101,41 +101,44 @@ export default function OrderDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <header className="bg-white dark:bg-zinc-900 shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+      <header className="backdrop-blur-xl bg-white/70 dark:bg-slate-900/70 border-b border-white/20 dark:border-slate-800/50 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg">
+              <span className="text-white text-xl">📝</span>
+            </div>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
               Order #{order.id}
             </h1>
             <button
               onClick={() => router.push('/orders')}
-              className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+              className="ml-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
             >
-              ← Back to Orders
+              ← Orders
             </button>
           </div>
           <button
             onClick={handleLogout}
-            className="px-4 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors"
+            className="px-5 py-2.5 bg-gradient-to-r from-slate-800 to-slate-900 dark:from-white dark:to-slate-100 text-white dark:text-slate-900 rounded-xl hover:shadow-lg transition-all duration-300 font-medium"
           >
             Logout
           </button>
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white dark:bg-zinc-900 shadow rounded-lg p-6 mb-6">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="backdrop-blur-xl bg-white/70 dark:bg-slate-900/70 border border-white/20 dark:border-slate-800/50 shadow-2xl rounded-3xl p-8 mb-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">Customer</p>
-              <p className="text-lg font-semibold text-zinc-900 dark:text-white">
+              <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">Customer</p>
+              <p className="text-lg font-bold text-slate-900 dark:text-white">
                 {order.customer.name}
               </p>
             </div>
             <div>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">Date</p>
-              <p className="text-lg font-semibold text-zinc-900 dark:text-white">
+              <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">Date</p>
+              <p className="text-lg font-bold text-slate-900 dark:text-white">
                 {new Date(order.date).toLocaleDateString('nl-NL', {
                   year: 'numeric',
                   month: 'long',
@@ -144,11 +147,11 @@ export default function OrderDetailPage() {
               </p>
             </div>
             <div>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">Payment Type</p>
-              <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+              <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">Payment Type</p>
+              <span className={`inline-block px-4 py-2 rounded-xl text-sm font-semibold shadow-sm ${
                 order.paymentType === 'cash' 
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' 
-                  : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300'
+                  ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white' 
+                  : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white'
               }`}>
                 {order.paymentType === 'cash' ? 'Cash' : 'Factuur'}
               </span>
@@ -156,40 +159,40 @@ export default function OrderDetailPage() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-zinc-900 shadow rounded-lg overflow-hidden">
-          <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center">
-            <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">
+        <div className="backdrop-blur-xl bg-white/70 dark:bg-slate-900/70 border border-white/20 dark:border-slate-800/50 shadow-2xl rounded-3xl overflow-hidden">
+          <div className="px-8 py-6 border-b border-white/20 dark:border-slate-800/50 flex justify-between items-center">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
               Items
             </h2>
-            <p className="text-2xl font-bold text-zinc-900 dark:text-white">
+            <p className="text-2xl font-bold text-green-700 dark:text-green-400">
               €{calculateTotal()}
             </p>
           </div>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-zinc-200 dark:divide-zinc-800">
-              <thead className="bg-zinc-50 dark:bg-zinc-800">
+            <table className="min-w-full divide-y divide-white/10 dark:divide-slate-800/50">
+              <thead className="bg-slate-50/50 dark:bg-slate-800/50 backdrop-blur-xl">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                     Item
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-right text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                     Qty
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-right text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                     Price
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white dark:bg-zinc-900 divide-y divide-zinc-200 dark:divide-zinc-800">
+              <tbody className="divide-y divide-white/10 dark:divide-slate-800/50">
                 {order.orderDetails.map((detail) => (
-                  <tr key={detail.id}>
-                    <td className="px-6 py-4 text-sm font-medium text-zinc-900 dark:text-white">
+                  <tr key={detail.id} className="hover:bg-white/30 dark:hover:bg-slate-800/30 transition-colors">
+                    <td className="px-6 py-4 text-sm font-semibold text-slate-900 dark:text-white">
                       {detail.product.name}
                     </td>
-                    <td className="px-6 py-4 text-sm text-right text-zinc-900 dark:text-white">
+                    <td className="px-6 py-4 text-sm text-right font-medium text-slate-900 dark:text-white">
                       {detail.quantity}
                     </td>
-                    <td className="px-6 py-4 text-sm text-right text-zinc-900 dark:text-white">
+                    <td className="px-6 py-4 text-sm text-right font-semibold text-green-700 dark:text-green-400">
                       €{detail.price.toFixed(2)}
                     </td>
                   </tr>
