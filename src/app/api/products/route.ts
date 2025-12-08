@@ -56,9 +56,9 @@ export async function GET() {
 // POST create new product
 export async function POST(request: Request) {
   try {
-    const { name, ean, stock } = await request.json()
+    const { name, ean, stock, minimalStock } = await request.json()
 
-    console.log('Creating product:', { name, ean, stock })
+    console.log('Creating product:', { name, ean, stock, minimalStock })
 
     if (!name || stock === undefined || stock === '') {
       return NextResponse.json(
@@ -75,11 +75,20 @@ export async function POST(request: Request) {
       )
     }
 
+    let minimalStockValue = null
+    if (minimalStock && minimalStock !== '') {
+      const parsed = parseInt(minimalStock, 10)
+      if (!isNaN(parsed)) {
+        minimalStockValue = parsed
+      }
+    }
+
     const product = await prisma.product.create({
       data: {
         name: name.trim(),
         ean: ean && ean.trim() ? ean.trim() : null,
         currentStock: stockValue,
+        minimalStock: minimalStockValue,
       },
     })
 

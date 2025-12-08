@@ -25,6 +25,7 @@ model Product {
   name            String
   ean             String?
   currentStock    Int              @default(0) @map("current_stock")
+  minimalStock    Int?             @map("minimal_stock")
   purchaseDetails PurchaseDetail[] @relation("ProductToPurchaseDetail")
   orderDetails    OrderDetail[]    @relation("ProductToOrderDetail")
   stockMovements  StockMovement[]

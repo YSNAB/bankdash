@@ -9,6 +9,7 @@ interface Product {
   name: string
   ean: string | null
   currentStock: number
+  minimalStock: number | null
   avgPurchasePrice: number
 }
 
@@ -21,6 +22,7 @@ export default function ProductsPage() {
     name: '',
     ean: '',
     stock: '',
+    minimalStock: '',
   })
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -73,7 +75,7 @@ export default function ProductsPage() {
       }
 
       // Reset form and refresh products
-      setFormData({ name: '', ean: '', stock: '' })
+      setFormData({ name: '', ean: '', stock: '', minimalStock: '' })
       setShowAddForm(false)
       fetchProducts()
     } catch (err) {
@@ -230,6 +232,23 @@ export default function ProductsPage() {
                 />
               </div>
 
+              <div>
+                <label
+                  htmlFor="minimalStock"
+                  className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
+                >
+                  Minimal Stock
+                </label>
+                <input
+                  id="minimalStock"
+                  type="number"
+                  value={formData.minimalStock}
+                  onChange={(e) => setFormData({ ...formData, minimalStock: e.target.value })}
+                  className="w-full px-4 py-3 bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white transition-all shadow-sm"
+                  placeholder="Optional minimum stock level"
+                />
+              </div>
+
               {error && (
                 <div className="text-sm text-red-600 dark:text-red-400 bg-red-50/50 dark:bg-red-900/20 px-4 py-3 rounded-xl backdrop-blur-xl">
                   {error}
@@ -270,6 +289,9 @@ export default function ProductsPage() {
                       Current Stock
                     </th>
                     <th className="px-6 py-4 text-right text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                      Min Stock
+                    </th>
+                    <th className="px-6 py-4 text-right text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                       Avg Purchase Price
                     </th>
                   </tr>
@@ -288,6 +310,9 @@ export default function ProductsPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-slate-900 dark:text-white">
                         {product.currentStock}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-slate-600 dark:text-slate-400">
+                        {product.minimalStock || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-green-700 dark:text-green-400">
                         €{product.avgPurchasePrice.toFixed(2)}
