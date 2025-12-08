@@ -96,100 +96,103 @@ export default function PurchasesPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950">
-        <div className="text-zinc-600 dark:text-zinc-400">Loading...</div>
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+        <div className="text-slate-600 dark:text-slate-400 text-lg">Loading...</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <header className="bg-white dark:bg-zinc-900 shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+      <header className="backdrop-blur-xl bg-white/70 dark:bg-slate-900/70 border-b border-white/20 dark:border-slate-800/50 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg">
+              <span className="text-white text-xl">📦</span>
+            </div>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
               Purchases
             </h1>
             <button
               onClick={() => router.push('/dashboard')}
-              className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+              className="ml-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
             >
-              ← Back to Dashboard
+              ← Dashboard
             </button>
           </div>
           <button
             onClick={handleLogout}
-            className="px-4 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors"
+            className="px-5 py-2.5 bg-gradient-to-r from-slate-800 to-slate-900 dark:from-white dark:to-slate-100 text-white dark:text-slate-900 rounded-xl hover:shadow-lg transition-all duration-300 font-medium"
           >
             Logout
           </button>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6 flex justify-between items-center">
-          <h2 className="text-xl font-semibold text-zinc-900 dark:text-white">
-            Purchase Orders ({purchases.length})
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="mb-8 flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+            Purchase Orders <span className="text-slate-500 dark:text-slate-400 text-lg">({purchases.length})</span>
           </h2>
           <button
             onClick={() => router.push('/purchases/new')}
-            className="px-4 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors"
+            className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 font-medium"
           >
             + New Purchase Order
           </button>
         </div>
 
-        <div className="bg-white dark:bg-zinc-900 shadow rounded-lg overflow-hidden">
+        <div className="backdrop-blur-xl bg-white/70 dark:bg-slate-900/70 border border-white/20 dark:border-slate-800/50 shadow-2xl rounded-3xl overflow-hidden">
           {purchases.length === 0 ? (
-            <div className="p-8 text-center text-zinc-500 dark:text-zinc-400">
+            <div className="p-12 text-center text-slate-500 dark:text-slate-400">
               No purchase orders yet. Create your first purchase order to get started.
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-zinc-200 dark:divide-zinc-800">
-                <thead className="bg-zinc-50 dark:bg-zinc-800">
+              <table className="min-w-full divide-y divide-white/10 dark:divide-slate-800/50">
+                <thead className="bg-slate-50/50 dark:bg-slate-800/50 backdrop-blur-xl">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                       Order #
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                       Date
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                       Supplier
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-right text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                       Total
                     </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-center text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                       Acties
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white dark:bg-zinc-900 divide-y divide-zinc-200 dark:divide-zinc-800">
+                <tbody className="divide-y divide-white/10 dark:divide-slate-800/50">
                   {purchases.map((purchase) => (
                     <tr
                       key={purchase.id}
                       onClick={() => router.push(`/purchases/${purchase.id}`)}
-                      className="hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors"
+                      className="hover:bg-white/30 dark:hover:bg-slate-800/30 cursor-pointer transition-all"
                     >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-zinc-900 dark:text-white">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-900 dark:text-white">
                         #{purchase.id}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-900 dark:text-white">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white">
                         {new Date(purchase.date).toLocaleDateString('nl-NL')}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-900 dark:text-white">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white">
                         {purchase.supplier.name}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-zinc-900 dark:text-white">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-green-700 dark:text-green-400">
                         €{calculateTotal(purchase.purchaseDetails)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
                         <button
                           onClick={(e) => deletePurchase(e, purchase.id)}
                           disabled={deleting === purchase.id}
-                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                          className="px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {deleting === purchase.id ? 'Verwijderen...' : 'Verwijder'}
                         </button>

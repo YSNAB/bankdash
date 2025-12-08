@@ -205,40 +205,43 @@ export default function NewPurchasePage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <header className="bg-white dark:bg-zinc-900 shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+      <header className="backdrop-blur-xl bg-white/70 dark:bg-slate-900/70 border-b border-white/20 dark:border-slate-800/50 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg">
+              <span className="text-white text-xl">📦</span>
+            </div>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
               New Purchase Order
             </h1>
             <button
               onClick={() => router.push('/purchases')}
-              className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+              className="ml-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
             >
-              ← Back to Purchases
+              ← Purchases
             </button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="bg-white dark:bg-zinc-900 shadow rounded-lg p-6">
-            <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <form onSubmit={handleSubmit} className="space-y-8">
+          <div className="backdrop-blur-xl bg-white/70 dark:bg-slate-900/70 border border-white/20 dark:border-slate-800/50 shadow-2xl rounded-3xl p-8">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-6">
               Order Details
             </h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   Supplier *
                 </label>
                 <div className="flex gap-2">
                   <select
                     value={supplierId}
                     onChange={(e) => setSupplierId(e.target.value)}
-                    className="flex-1 px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-zinc-500 focus:border-transparent bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                    className="flex-1 px-4 py-3 backdrop-blur-xl bg-white/50 dark:bg-slate-800/50 border border-white/20 dark:border-slate-700/50 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 dark:text-white transition-all"
                     required
                   >
                     <option value="">Select a supplier</option>
@@ -251,25 +254,25 @@ export default function NewPurchasePage() {
                   <button
                     type="button"
                     onClick={() => setShowNewSupplier(!showNewSupplier)}
-                    className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                    className="px-4 py-3 bg-gradient-to-r from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 text-slate-900 dark:text-white rounded-xl hover:shadow-lg transition-all font-semibold"
                   >
                     +
                   </button>
                 </div>
                 
                 {showNewSupplier && (
-                  <div className="mt-2 flex gap-2">
+                  <div className="mt-3 flex gap-2">
                     <input
                       type="text"
                       value={newSupplierName}
                       onChange={(e) => setNewSupplierName(e.target.value)}
                       placeholder="New supplier name"
-                      className="flex-1 px-3 py-1.5 text-sm border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                      className="flex-1 px-3 py-2 text-sm backdrop-blur-xl bg-white/50 dark:bg-slate-800/50 border border-white/20 dark:border-slate-700/50 rounded-xl text-slate-900 dark:text-white"
                     />
                     <button
                       type="button"
                       onClick={addNewSupplier}
-                      className="px-3 py-1.5 text-sm bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-lg"
+                      className="px-4 py-2 text-sm bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all font-medium"
                     >
                       Add
                     </button>
@@ -278,29 +281,29 @@ export default function NewPurchasePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                   Date *
                 </label>
                 <input
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-zinc-500 focus:border-transparent bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                  className="w-full px-4 py-3 backdrop-blur-xl bg-white/50 dark:bg-slate-800/50 border border-white/20 dark:border-slate-700/50 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 dark:text-white transition-all"
                   required
                 />
               </div>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-zinc-900 shadow rounded-lg p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">
+          <div className="backdrop-blur-xl bg-white/70 dark:bg-slate-900/70 border border-white/20 dark:border-slate-800/50 shadow-2xl rounded-3xl p-8">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">
                 Items
               </h2>
               <button
                 type="button"
                 onClick={addItem}
-                className="px-3 py-1.5 text-sm bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                className="px-5 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 font-medium"
               >
                 + Add Item
               </button>
@@ -308,9 +311,9 @@ export default function NewPurchasePage() {
 
             <div className="space-y-4">
               {items.map((item, index) => (
-                <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-3 p-4 border border-zinc-200 dark:border-zinc-800 rounded-lg">
+                <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-3 p-5 backdrop-blur-xl bg-white/40 dark:bg-slate-800/40 border border-white/30 dark:border-slate-700/30 rounded-2xl">
                   <div className="md:col-span-4 relative">
-                    <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                       Product *
                     </label>
                     <input
@@ -318,19 +321,19 @@ export default function NewPurchasePage() {
                       value={searchQuery[index] || ''}
                       onChange={(e) => handleSearchChange(index, e.target.value)}
                       placeholder="Type to search products..."
-                      className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                      className="w-full px-3 py-2 text-sm backdrop-blur-xl bg-white/50 dark:bg-slate-900/50 border border-white/20 dark:border-slate-700/50 rounded-xl text-slate-900 dark:text-white transition-all"
                       required
                     />
                     {filteredProducts[index]?.length > 0 && (
-                      <div className="absolute z-10 w-full mt-1 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      <div className="absolute z-10 w-full mt-1 backdrop-blur-xl bg-white/95 dark:bg-slate-800/95 border border-white/20 dark:border-slate-700/50 rounded-xl shadow-2xl max-h-48 overflow-y-auto">
                         {filteredProducts[index].map((product) => (
                           <button
                             key={product.id}
                             type="button"
                             onClick={() => selectProduct(index, product)}
-                            className="w-full px-3 py-2 text-left text-sm hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-900 dark:text-white"
+                            className="w-full px-3 py-2 text-left text-sm hover:bg-blue-50 dark:hover:bg-slate-700/50 text-slate-900 dark:text-white transition-colors"
                           >
-                            {product.name} <span className="text-zinc-500 dark:text-zinc-400">(Stock: {product.currentStock})</span>
+                            {product.name} <span className="text-slate-500 dark:text-slate-400">(Stock: {product.currentStock})</span>
                           </button>
                         ))}
                       </div>
@@ -338,13 +341,13 @@ export default function NewPurchasePage() {
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                       Type *
                     </label>
                     <select
                       value={item.type}
                       onChange={(e) => updateItem(index, 'type', e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                      className="w-full px-3 py-2 text-sm backdrop-blur-xl bg-white/50 dark:bg-slate-900/50 border border-white/20 dark:border-slate-700/50 rounded-xl text-slate-900 dark:text-white transition-all"
                       required
                     >
                       <option value="C">C</option>
@@ -353,20 +356,20 @@ export default function NewPurchasePage() {
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                       Quantity *
                     </label>
                     <input
                       type="number"
                       value={item.quantity}
                       onChange={(e) => updateItem(index, 'quantity', e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                      className="w-full px-3 py-2 text-sm backdrop-blur-xl bg-white/50 dark:bg-slate-900/50 border border-white/20 dark:border-slate-700/50 rounded-xl text-slate-900 dark:text-white transition-all"
                       required
                     />
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                       Price (€) *
                     </label>
                     <input
@@ -374,7 +377,7 @@ export default function NewPurchasePage() {
                       step="0.01"
                       value={item.price}
                       onChange={(e) => updateItem(index, 'price', e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                      className="w-full px-3 py-2 text-sm backdrop-blur-xl bg-white/50 dark:bg-slate-900/50 border border-white/20 dark:border-slate-700/50 rounded-xl text-slate-900 dark:text-white transition-all"
                       required
                     />
                   </div>
@@ -384,7 +387,7 @@ export default function NewPurchasePage() {
                       type="button"
                       onClick={() => removeItem(index)}
                       disabled={items.length === 1}
-                      className="w-full px-3 py-2 text-sm bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full px-3 py-2 text-sm bg-red-50/50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-100/70 dark:hover:bg-red-900/40 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
                     >
                       Remove
                     </button>
@@ -393,11 +396,11 @@ export default function NewPurchasePage() {
               ))}
             </div>
 
-            <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
+            <div className="mt-8 pt-6 border-t border-white/20 dark:border-slate-700/50">
               <div className="flex justify-end">
                 <div className="text-right">
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400">Total</p>
-                  <p className="text-2xl font-bold text-zinc-900 dark:text-white">
+                  <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">Total</p>
+                  <p className="text-2xl font-bold text-green-700 dark:text-green-400">
                     €{calculateTotal()}
                   </p>
                 </div>
@@ -406,8 +409,8 @@ export default function NewPurchasePage() {
           </div>
 
           {error && (
-            <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-4 py-2 rounded-lg">
-              {error}
+            <div className="backdrop-blur-xl bg-red-50/70 dark:bg-red-900/30 border border-red-200/50 dark:border-red-800/50 rounded-2xl p-5 shadow-lg">
+              <p className="text-red-800 dark:text-red-200 text-sm font-medium">{error}</p>
             </div>
           )}
 
@@ -415,14 +418,14 @@ export default function NewPurchasePage() {
             <button
               type="button"
               onClick={() => router.push('/purchases')}
-              className="flex-1 px-4 py-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+              className="flex-1 px-6 py-3 backdrop-blur-xl bg-white/50 dark:bg-slate-800/50 border border-white/20 dark:border-slate-700/50 text-slate-900 dark:text-white rounded-xl hover:shadow-lg transition-all font-medium"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 px-4 py-3 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-medium rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? 'Creating...' : 'Create Purchase Order'}
             </button>

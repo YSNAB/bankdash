@@ -49,21 +49,26 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-zinc-950">
-      <div className="w-full max-w-lg">
-        <div className="bg-white dark:bg-zinc-900 shadow-lg rounded-lg px-8 py-10">
-          <div className="mb-8 text-center">
-            <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">Welcome to Phonebank Admin</h1>
-            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 font-sans">
+      <div className="w-full max-w-md">
+        <div className="backdrop-blur-xl bg-white/70 dark:bg-slate-900/70 border border-white/20 dark:border-slate-800/50 shadow-2xl rounded-3xl px-10 py-12">
+          <div className="mb-10 text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 mb-4 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg">
+              <span className="text-3xl">📱</span>
+            </div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent mb-2">
+              Phonebank Admin
+            </h1>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
               Sign in to your account
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label 
                 htmlFor="username" 
-                className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2"
+                className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2"
               >
                 Username
               </label>
@@ -72,7 +77,7 @@ export default function LoginPage() {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-zinc-500 focus:border-transparent bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500"
+                className="w-full px-4 py-3 backdrop-blur-xl bg-white/50 dark:bg-slate-800/50 border border-white/20 dark:border-slate-700/50 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 transition-all"
                 placeholder="Enter your username"
                 required
               />
@@ -81,7 +86,7 @@ export default function LoginPage() {
             <div>
               <label 
                 htmlFor="password" 
-                className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2"
+                className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2"
               >
                 Password
               </label>
@@ -90,14 +95,14 @@ export default function LoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-zinc-500 focus:border-transparent bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500"
+                className="w-full px-4 py-3 backdrop-blur-xl bg-white/50 dark:bg-slate-800/50 border border-white/20 dark:border-slate-700/50 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 transition-all"
                 placeholder="Enter your password"
                 required
               />
             </div>
 
             {error && (
-              <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-4 py-2 rounded-lg">
+              <div className="text-sm text-red-600 dark:text-red-400 bg-red-50/80 dark:bg-red-900/30 backdrop-blur-sm px-4 py-3 rounded-xl border border-red-200 dark:border-red-800/50">
                 {error}
               </div>
             )}
@@ -105,14 +110,14 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-medium py-2.5 rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-3.5 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
 
-          <div className="mt-6 text-center text-xs text-zinc-500 dark:text-zinc-400">
-            Users are managed by administrators
+          <div className="mt-8 text-center text-xs text-slate-500 dark:text-slate-400">
+            🔒 Secure admin access
           </div>
         </div>
       </div>

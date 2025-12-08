@@ -122,60 +122,63 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <header className="bg-white dark:bg-zinc-900 shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+      <header className="backdrop-blur-xl bg-white/70 dark:bg-slate-900/70 border-b border-white/20 dark:border-slate-800/50 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
+              <span className="text-white text-xl">📦</span>
+            </div>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
               Products
             </h1>
             <button
               onClick={() => router.push('/dashboard')}
-              className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+              className="ml-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
             >
-              ← Back to Dashboard
+              ← Dashboard
             </button>
           </div>
           <button
             onClick={handleLogout}
-            className="px-4 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors"
+            className="px-5 py-2.5 bg-gradient-to-r from-slate-800 to-slate-900 dark:from-white dark:to-slate-100 text-white dark:text-slate-900 rounded-xl hover:shadow-lg transition-all duration-300 font-medium"
           >
             Logout
           </button>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6 flex justify-between items-center">
-          <h2 className="text-xl font-semibold text-zinc-900 dark:text-white">
-            Product List ({products.length})
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="mb-8 flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+            Product List <span className="text-slate-500 dark:text-slate-400 text-lg">({products.length})</span>
           </h2>
           <div className="flex gap-3">
             <button
               onClick={exportToExcel}
-              className="px-4 py-2 bg-green-600 dark:bg-green-700 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-800 transition-colors"
+              className="px-5 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 font-medium"
             >
-              📊 Export to Excel
+              📊 Export Excel
             </button>
             <button
               onClick={() => setShowAddForm(!showAddForm)}
-              className="px-4 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors"
+              className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 font-medium"
             >
-              {showAddForm ? 'Cancel' : '+ Add Product'}
+              {showAddForm ? '✕ Cancel' : '+ Add Product'}
             </button>
           </div>
         </div>
 
         {showAddForm && (
-          <div className="bg-white dark:bg-zinc-900 shadow rounded-lg p-6 mb-6">
-            <h3 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4">
+          <div className="backdrop-blur-xl bg-white/70 dark:bg-slate-900/70 border border-white/20 dark:border-slate-800/50 shadow-2xl rounded-3xl p-8 mb-8">
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6">
               Add New Product
             </h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label
                   htmlFor="name"
-                  className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2"
+                  className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
                 >
                   Product Name *
                 </label>
@@ -184,7 +187,7 @@ export default function ProductsPage() {
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-zinc-500 focus:border-transparent bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                  className="w-full px-4 py-3 backdrop-blur-xl bg-white/50 dark:bg-slate-800/50 border border-white/20 dark:border-slate-700/50 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 dark:text-white transition-all"
                   required
                 />
               </div>
@@ -192,7 +195,7 @@ export default function ProductsPage() {
               <div>
                 <label
                   htmlFor="ean"
-                  className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2"
+                  className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
                 >
                   EAN Code
                 </label>
@@ -201,14 +204,14 @@ export default function ProductsPage() {
                   type="text"
                   value={formData.ean}
                   onChange={(e) => setFormData({ ...formData, ean: e.target.value })}
-                  className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-zinc-500 focus:border-transparent bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                  className="w-full px-4 py-3 backdrop-blur-xl bg-white/50 dark:bg-slate-800/50 border border-white/20 dark:border-slate-700/50 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 dark:text-white transition-all"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor="stock"
-                  className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2"
+                  className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
                 >
                   Stock *
                 </label>
@@ -217,13 +220,13 @@ export default function ProductsPage() {
                   type="number"
                   value={formData.stock}
                   onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                  className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-zinc-500 focus:border-transparent bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                  className="w-full px-4 py-3 backdrop-blur-xl bg-white/50 dark:bg-slate-800/50 border border-white/20 dark:border-slate-700/50 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 dark:text-white transition-all"
                   required
                 />
               </div>
 
               {error && (
-                <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-4 py-2 rounded-lg">
+                <div className="text-sm text-red-600 dark:text-red-400 bg-red-50/50 dark:bg-red-900/20 px-4 py-3 rounded-xl backdrop-blur-xl">
                   {error}
                 </div>
               )}
@@ -231,7 +234,7 @@ export default function ProductsPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-medium py-2.5 rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? 'Adding...' : 'Add Product'}
               </button>
@@ -239,49 +242,49 @@ export default function ProductsPage() {
           </div>
         )}
 
-        <div className="bg-white dark:bg-zinc-900 shadow rounded-lg overflow-hidden">
+        <div className="backdrop-blur-xl bg-white/70 dark:bg-slate-900/70 border border-white/20 dark:border-slate-800/50 shadow-2xl rounded-3xl overflow-hidden">
           {products.length === 0 ? (
-            <div className="p-8 text-center text-zinc-500 dark:text-zinc-400">
+            <div className="p-12 text-center text-slate-500 dark:text-slate-400">
               No products yet. Add your first product to get started.
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-zinc-200 dark:divide-zinc-800">
-                <thead className="bg-zinc-50 dark:bg-zinc-800">
+              <table className="min-w-full divide-y divide-white/10 dark:divide-slate-800/50">
+                <thead className="bg-slate-50/50 dark:bg-slate-800/50 backdrop-blur-xl">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                       ID
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                       Name
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                       EAN
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-right text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                       Current Stock
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-right text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                       Avg Purchase Price
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white dark:bg-zinc-900 divide-y divide-zinc-200 dark:divide-zinc-800">
+                <tbody className="divide-y divide-white/10 dark:divide-slate-800/50">
                   {products.map((product) => (
-                    <tr key={product.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-900 dark:text-white">
+                    <tr key={product.id} className="hover:bg-white/30 dark:hover:bg-slate-800/30 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white">
                         {product.id}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-900 dark:text-white">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white">
                         {product.name}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500 dark:text-zinc-400">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
                         {product.ean || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-zinc-900 dark:text-white">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-slate-900 dark:text-white">
                         {product.currentStock}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-zinc-900 dark:text-white">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-green-700 dark:text-green-400">
                         €{product.avgPurchasePrice.toFixed(2)}
                       </td>
                     </tr>
