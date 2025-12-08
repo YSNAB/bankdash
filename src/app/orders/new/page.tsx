@@ -254,7 +254,7 @@ export default function NewOrderPage() {
                   <select
                     value={customerId}
                     onChange={(e) => setCustomerId(e.target.value)}
-                    className="flex-1 px-4 py-3 backdrop-blur-xl bg-white/50 dark:bg-slate-800/50 border border-white/20 dark:border-slate-700/50 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 dark:text-white transition-all"
+                    className="flex-1 px-4 py-3 bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white transition-all shadow-sm"
                     required
                   >
                     <option value="">Select a customer</option>
@@ -280,7 +280,7 @@ export default function NewOrderPage() {
                       value={newCustomerName}
                       onChange={(e) => setNewCustomerName(e.target.value)}
                       placeholder="New customer name"
-                      className="flex-1 px-3 py-2 text-sm backdrop-blur-xl bg-white/50 dark:bg-slate-800/50 border border-white/20 dark:border-slate-700/50 rounded-xl text-slate-900 dark:text-white"
+                      className="flex-1 px-3 py-2 text-sm bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white shadow-sm"
                     />
                     <button
                       type="button"
@@ -301,7 +301,7 @@ export default function NewOrderPage() {
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full px-4 py-3 backdrop-blur-xl bg-white/50 dark:bg-slate-800/50 border border-white/20 dark:border-slate-700/50 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 dark:text-white transition-all"
+                  className="w-full px-4 py-3 bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white transition-all shadow-sm"
                   required
                 />
               </div>
@@ -313,7 +313,7 @@ export default function NewOrderPage() {
                 <select
                   value={paymentType}
                   onChange={(e) => setPaymentType(e.target.value)}
-                  className="w-full px-4 py-3 backdrop-blur-xl bg-white/50 dark:bg-slate-800/50 border border-white/20 dark:border-slate-700/50 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 dark:text-white transition-all"
+                  className="w-full px-4 py-3 bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white transition-all shadow-sm"
                   required
                 >
                   <option value="cash">Cash</option>
@@ -348,7 +348,7 @@ export default function NewOrderPage() {
                       type="text"
                       value={searchQuery[index]}
                       onChange={(e) => handleSearchChange(index, e.target.value)}
-                      className="w-full px-3 py-2 backdrop-blur-xl bg-white/50 dark:bg-slate-900/50 border border-white/20 dark:border-slate-700/50 rounded-xl text-slate-900 dark:text-white text-sm transition-all"
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white text-sm transition-all shadow-sm"
                       placeholder="Search product..."
                       required
                     />
@@ -379,7 +379,7 @@ export default function NewOrderPage() {
                       type="number"
                       value={item.quantity}
                       onChange={(e) => updateItem(index, 'quantity', e.target.value)}
-                      className="w-full px-3 py-2 backdrop-blur-xl bg-white/50 dark:bg-slate-900/50 border border-white/20 dark:border-slate-700/50 rounded-xl text-slate-900 dark:text-white text-sm transition-all"
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white text-sm transition-all shadow-sm"
                       min="1"
                       required
                     />
@@ -394,7 +394,7 @@ export default function NewOrderPage() {
                       step="0.01"
                       value={item.price}
                       onChange={(e) => updateItem(index, 'price', e.target.value)}
-                      className="w-full px-3 py-2 backdrop-blur-xl bg-white/50 dark:bg-slate-900/50 border border-white/20 dark:border-slate-700/50 rounded-xl text-slate-900 dark:text-white text-sm transition-all"
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white text-sm transition-all shadow-sm"
                       min="0"
                       required
                     />

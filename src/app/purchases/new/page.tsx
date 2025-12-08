@@ -243,7 +243,7 @@ export default function NewPurchasePage() {
                   <select
                     value={supplierId}
                     onChange={(e) => setSupplierId(e.target.value)}
-                    className="flex-1 px-4 py-3 backdrop-blur-xl bg-white/50 dark:bg-slate-800/50 border border-white/20 dark:border-slate-700/50 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 dark:text-white transition-all"
+                    className="flex-1 px-4 py-3 bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white transition-all shadow-sm"
                     required
                   >
                     <option value="">Select a supplier</option>
@@ -269,7 +269,7 @@ export default function NewPurchasePage() {
                       value={newSupplierName}
                       onChange={(e) => setNewSupplierName(e.target.value)}
                       placeholder="New supplier name"
-                      className="flex-1 px-3 py-2 text-sm backdrop-blur-xl bg-white/50 dark:bg-slate-800/50 border border-white/20 dark:border-slate-700/50 rounded-xl text-slate-900 dark:text-white"
+                      className="flex-1 px-3 py-2 text-sm bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white shadow-sm"
                     />
                     <button
                       type="button"
@@ -290,7 +290,7 @@ export default function NewPurchasePage() {
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full px-4 py-3 backdrop-blur-xl bg-white/50 dark:bg-slate-800/50 border border-white/20 dark:border-slate-700/50 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 dark:text-white transition-all"
+                  className="w-full px-4 py-3 bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white transition-all shadow-sm"
                   required
                 />
               </div>
@@ -323,7 +323,7 @@ export default function NewPurchasePage() {
                       value={searchQuery[index] || ''}
                       onChange={(e) => handleSearchChange(index, e.target.value)}
                       placeholder="Type to search products..."
-                      className="w-full px-3 py-2 text-sm backdrop-blur-xl bg-white/50 dark:bg-slate-900/50 border border-white/20 dark:border-slate-700/50 rounded-xl text-slate-900 dark:text-white transition-all"
+                      className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white transition-all shadow-sm"
                       required
                     />
                     {filteredProducts[index]?.length > 0 && (
@@ -349,7 +349,7 @@ export default function NewPurchasePage() {
                     <select
                       value={item.type}
                       onChange={(e) => updateItem(index, 'type', e.target.value)}
-                      className="w-full px-3 py-2 text-sm backdrop-blur-xl bg-white/50 dark:bg-slate-900/50 border border-white/20 dark:border-slate-700/50 rounded-xl text-slate-900 dark:text-white transition-all"
+                      className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white transition-all shadow-sm"
                       required
                     >
                       <option value="C">C</option>
@@ -365,7 +365,7 @@ export default function NewPurchasePage() {
                       type="number"
                       value={item.quantity}
                       onChange={(e) => updateItem(index, 'quantity', e.target.value)}
-                      className="w-full px-3 py-2 text-sm backdrop-blur-xl bg-white/50 dark:bg-slate-900/50 border border-white/20 dark:border-slate-700/50 rounded-xl text-slate-900 dark:text-white transition-all"
+                      className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white transition-all shadow-sm"
                       required
                     />
                   </div>
@@ -379,7 +379,7 @@ export default function NewPurchasePage() {
                       step="0.01"
                       value={item.price}
                       onChange={(e) => updateItem(index, 'price', e.target.value)}
-                      className="w-full px-3 py-2 text-sm backdrop-blur-xl bg-white/50 dark:bg-slate-900/50 border border-white/20 dark:border-slate-700/50 rounded-xl text-slate-900 dark:text-white transition-all"
+                      className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white transition-all shadow-sm"
                       required
                     />
                   </div>
