@@ -118,3 +118,6 @@ Don't forget to add your `DATABASE_URL` environment variable in your deployment 
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
+### Handy
+
+run `npx tsx scripts/add-user.ts` to add user for this application. 
