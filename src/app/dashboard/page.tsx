@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
 interface LowStockProduct {
   id: number
@@ -11,12 +12,47 @@ interface LowStockProduct {
   percentage: number
 }
 
+interface RevenueData {
+  date: string
+  total: number
+  cash: number
+  factuur: number
+}
+
+interface PurchaseData {
+  date: string
+  total: number
+}
+
+interface ProfitData {
+  date: string
+  profit: number
+  revenue: number
+  cost: number
+}
+
+interface ChartData {
+  date: string
+  revenue?: number
+  purchase?: number
+  profit?: number
+  cost?: number
+  cash?: number
+  factuur?: number
+}
+
 export default function DashboardPage() {
   const router = useRouter()
   const [user, setUser] = useState<{ username: string; name?: string | null } | null>(null)
   const [lowStockProducts, setLowStockProducts] = useState<LowStockProduct[]>([])
   const [isLoadingStock, setIsLoadingStock] = useState(true)
   const [showAllLowStock, setShowAllLowStock] = useState(false)
+  const [revenueData, setRevenueData] = useState<RevenueData[]>([])
+  const [purchaseData, setPurchaseData] = useState<PurchaseData[]>([])
+  const [profitData, setProfitData] = useState<ProfitData[]>([])
+  const [isLoadingRevenue, setIsLoadingRevenue] = useState(true)
+  const [revenueDays, setRevenueDays] = useState(30)
+  const [chartType, setChartType] = useState<'revenue' | 'purchase' | 'profit'>('revenue')
 
   useEffect(() => {
     // Check if user is logged in
@@ -27,6 +63,9 @@ export default function DashboardPage() {
     }
     setUser(JSON.parse(userData))
     fetchLowStockProducts()
+    fetchRevenueData(revenueDays)
+    fetchPurchaseData(revenueDays)
+    fetchProfitData(revenueDays)
   }, [router])
 
   const fetchLowStockProducts = async () => {
@@ -40,6 +79,76 @@ export default function DashboardPage() {
       console.error('Error fetching low stock products:', error)
     } finally {
       setIsLoadingStock(false)
+    }
+  }
+
+  const fetchRevenueData = async (days: number) => {
+    setIsLoadingRevenue(true)
+    try {
+      const response = await fetch(`/api/orders/stats?days=${days}`)
+      if (response.ok) {
+        const data = await response.json()
+        setRevenueData(data)
+      }
+    } catch (error) {
+      console.error('Error fetching revenue data:', error)
+    } finally {
+      setIsLoadingRevenue(false)
+    }
+  }
+
+  const fetchPurchaseData = async (days: number) => {
+    try {
+      const response = await fetch(`/api/purchases/stats?days=${days}`)
+      if (response.ok) {
+        const data = await response.json()
+        setPurchaseData(data)
+      }
+    } catch (error) {
+      console.error('Error fetching purchase data:', error)
+    }
+  }
+
+  const fetchProfitData = async (days: number) => {
+    try {
+      const response = await fetch(`/api/profit/stats?days=${days}`)
+      if (response.ok) {
+        const data = await response.json()
+        setProfitData(data)
+      }
+    } catch (error) {
+      console.error('Error fetching profit data:', error)
+    }
+  }
+
+  const handleDaysChange = (days: number) => {
+    setRevenueDays(days)
+    fetchRevenueData(days)
+    fetchPurchaseData(days)
+    fetchProfitData(days)
+  }
+
+  const getChartData = (): ChartData[] => {
+    if (chartType === 'revenue') {
+      return revenueData.map(item => ({
+        date: item.date,
+        revenue: item.total,
+        cash: item.cash,
+        factuur: item.factuur,
+      }))
+    } else if (chartType === 'purchase') {
+      return purchaseData.map(item => ({
+        date: item.date,
+        purchase: item.total,
+      }))
+    } else {
+      // Use profit data from API (calculated from actual sold units and average purchase prices)
+      return profitData.map(item => ({
+        date: item.date,
+        profit: item.profit,
+        revenue: item.revenue,
+        cost: item.cost,
+      }))
     }
   }
 
@@ -138,6 +247,220 @@ export default function DashboardPage() {
               </p>
             </div>
           </button>
+        </div>
+
+        {/* Revenue Chart */}
+        <div className="mb-8 backdrop-blur-xl bg-white/70 dark:bg-slate-900/70 border border-white/20 dark:border-slate-800/50 shadow-2xl rounded-3xl p-6">
+          <div className="flex flex-col gap-4 mb-6">
+            {/* Chart Type Selector */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setChartType('revenue')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  chartType === 'revenue'
+                    ? 'bg-green-600 text-white shadow-lg'
+                    : 'bg-white/50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 hover:bg-white/70 dark:hover:bg-slate-800/70'
+                }`}
+              >
+                📈 Revenue
+              </button>
+              <button
+                onClick={() => setChartType('purchase')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  chartType === 'purchase'
+                    ? 'bg-purple-600 text-white shadow-lg'
+                    : 'bg-white/50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 hover:bg-white/70 dark:hover:bg-slate-800/70'
+                }`}
+              >
+                🛒 Purchase
+              </button>
+              <button
+                onClick={() => setChartType('profit')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  chartType === 'profit'
+                    ? 'bg-blue-600 text-white shadow-lg'
+                    : 'bg-white/50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 hover:bg-white/70 dark:hover:bg-slate-800/70'
+                }`}
+              >
+                💎 Profit
+              </button>
+            </div>
+
+            {/* Header and Time Period Selector */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg ${
+                  chartType === 'revenue' ? 'bg-gradient-to-br from-green-500 to-emerald-600' :
+                  chartType === 'purchase' ? 'bg-gradient-to-br from-purple-500 to-pink-600' :
+                  'bg-gradient-to-br from-blue-500 to-indigo-600'
+                }`}>
+                  <span className="text-2xl">
+                    {chartType === 'revenue' ? '📈' : chartType === 'purchase' ? '🛒' : '💎'}
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+                    {chartType === 'revenue' ? 'Daily Revenue' : 
+                     chartType === 'purchase' ? 'Daily Purchases' : 
+                     'Daily Profit'}
+                  </h3>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    {chartType === 'revenue' ? 'Sales breakdown by payment type' : 
+                     chartType === 'purchase' ? 'Purchase expenditures over time' : 
+                     'Actual profit based on sold units and average purchase price'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleDaysChange(7)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    revenueDays === 7
+                      ? 'bg-blue-600 text-white shadow-lg'
+                      : 'bg-white/50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 hover:bg-white/70 dark:hover:bg-slate-800/70'
+                  }`}
+                >
+                  7 Days
+                </button>
+                <button
+                  onClick={() => handleDaysChange(30)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    revenueDays === 30
+                      ? 'bg-blue-600 text-white shadow-lg'
+                      : 'bg-white/50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 hover:bg-white/70 dark:hover:bg-slate-800/70'
+                  }`}
+                >
+                  30 Days
+                </button>
+                <button
+                  onClick={() => handleDaysChange(90)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    revenueDays === 90
+                      ? 'bg-blue-600 text-white shadow-lg'
+                      : 'bg-white/50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 hover:bg-white/70 dark:hover:bg-slate-800/70'
+                  }`}
+                >
+                  90 Days
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          {isLoadingRevenue ? (
+            <div className="h-80 flex items-center justify-center text-slate-600 dark:text-slate-400">
+              Loading chart...
+            </div>
+          ) : getChartData().length === 0 ? (
+            <div className="h-80 flex items-center justify-center text-slate-600 dark:text-slate-400">
+              No data available for this period
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={400}>
+              <LineChart data={getChartData()}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
+                <XAxis 
+                  dataKey="date" 
+                  stroke="#64748b"
+                  style={{ fontSize: '12px' }}
+                />
+                <YAxis 
+                  stroke="#64748b"
+                  style={{ fontSize: '12px' }}
+                  tickFormatter={(value) => `€${value}`}
+                />
+                <Tooltip 
+                  contentStyle={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '12px',
+                    padding: '12px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                  }}
+                  formatter={(value: number) => [`€${value.toFixed(2)}`, '']}
+                  labelStyle={{ color: '#1e293b', fontWeight: 'bold', marginBottom: '8px' }}
+                />
+                <Legend 
+                  wrapperStyle={{ paddingTop: '20px' }}
+                  iconType="line"
+                />
+                {chartType === 'revenue' && (
+                  <>
+                    <Line 
+                      type="monotone" 
+                      dataKey="revenue" 
+                      stroke="#3b82f6" 
+                      strokeWidth={3}
+                      name="Total Revenue"
+                      dot={{ fill: '#3b82f6', r: 4 }}
+                      activeDot={{ r: 6 }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="cash" 
+                      stroke="#10b981" 
+                      strokeWidth={2}
+                      name="Cash"
+                      dot={{ fill: '#10b981', r: 3 }}
+                      activeDot={{ r: 5 }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="factuur" 
+                      stroke="#f59e0b" 
+                      strokeWidth={2}
+                      name="Factuur"
+                      dot={{ fill: '#f59e0b', r: 3 }}
+                      activeDot={{ r: 5 }}
+                    />
+                  </>
+                )}
+                {chartType === 'purchase' && (
+                  <Line 
+                    type="monotone" 
+                    dataKey="purchase" 
+                    stroke="#a855f7" 
+                    strokeWidth={3}
+                    name="Total Purchases"
+                    dot={{ fill: '#a855f7', r: 4 }}
+                    activeDot={{ r: 6 }}
+                  />
+                )}
+                {chartType === 'profit' && (
+                  <>
+                    <Line 
+                      type="monotone" 
+                      dataKey="profit" 
+                      stroke="#3b82f6" 
+                      strokeWidth={3}
+                      name="Profit"
+                      dot={{ fill: '#3b82f6', r: 4 }}
+                      activeDot={{ r: 6 }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="revenue" 
+                      stroke="#10b981" 
+                      strokeWidth={2}
+                      name="Revenue"
+                      dot={{ fill: '#10b981', r: 3 }}
+                      activeDot={{ r: 5 }}
+                      strokeDasharray="5 5"
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="cost" 
+                      stroke="#ef4444" 
+                      strokeWidth={2}
+                      name="Cost"
+                      dot={{ fill: '#ef4444', r: 3 }}
+                      activeDot={{ r: 5 }}
+                      strokeDasharray="5 5"
+                    />
+                  </>
+                )}
+              </LineChart>
+            </ResponsiveContainer>
+          )}
         </div>
 
         {/* Low Stock Warning */}
