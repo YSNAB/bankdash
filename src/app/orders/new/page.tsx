@@ -161,7 +161,203 @@ export default function NewOrderPage() {
     }, 0).toFixed(2)
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handlePrint = (orderId: string) => {
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) return
+    
+    const total = calculateTotal()
+    const orderDate = new Date(date).toLocaleDateString('nl-NL', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
+    
+    const customerName = customers.find(c => c.id.toString() === customerId)?.name || ''
+    const paymentTypeLabel = paymentType === 'cash' ? 'Cash' : 'Factuur'
+    const isPaid = parseFloat(paidAmount) >= parseFloat(total)
+    
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Order #${orderId}</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: Arial, sans-serif; 
+            padding: 40px;
+            color: #333;
+          }
+          .header { 
+            text-align: center; 
+            margin-bottom: 40px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 20px;
+          }
+          .header h1 { 
+            font-size: 32px; 
+            margin-bottom: 10px;
+          }
+          .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+          }
+          .info-section {
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 8px;
+          }
+          .info-section h3 {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+          }
+          .info-section p {
+            font-size: 18px;
+            font-weight: bold;
+          }
+          table { 
+            width: 100%; 
+            border-collapse: collapse;
+            margin-bottom: 30px;
+          }
+          th { 
+            background: #333; 
+            color: white; 
+            padding: 12px;
+            text-align: left;
+            font-size: 14px;
+          }
+          th.right { text-align: right; }
+          td { 
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+          }
+          td.right { text-align: right; }
+          tr:hover { background: #f9f9f9; }
+          .totals {
+            margin-top: 20px;
+            text-align: right;
+          }
+          .totals-row {
+            display: flex;
+            justify-content: flex-end;
+            padding: 8px 0;
+            font-size: 16px;
+          }
+          .totals-row.total {
+            font-size: 24px;
+            font-weight: bold;
+            border-top: 2px solid #333;
+            padding-top: 15px;
+            margin-top: 10px;
+          }
+          .totals-label {
+            width: 150px;
+            text-align: right;
+            padding-right: 20px;
+          }
+          .totals-value {
+            width: 150px;
+            text-align: right;
+          }
+          .status {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 14px;
+          }
+          .status.paid {
+            background: #22c55e;
+            color: white;
+          }
+          .status.open {
+            background: #ef4444;
+            color: white;
+          }
+          @media print {
+            body { padding: 20px; }
+            .no-print { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Order #${orderId}</h1>
+          <p>Invoice</p>
+        </div>
+        
+        <div class="info-grid">
+          <div class="info-section">
+            <h3>Customer</h3>
+            <p>${customerName}</p>
+          </div>
+          <div class="info-section">
+            <h3>Date</h3>
+            <p>${orderDate}</p>
+          </div>
+          <div class="info-section">
+            <h3>Payment Type</h3>
+            <p>${paymentTypeLabel}</p>
+          </div>
+          <div class="info-section">
+            <h3>Status</h3>
+            <p><span class="status ${isPaid ? 'paid' : 'open'}">${isPaid ? 'Paid' : 'Open'}</span></p>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th class="right">Quantity</th>
+              <th class="right">Price</th>
+              <th class="right">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.map(item => `
+              <tr>
+                <td>${item.productName}</td>
+                <td class="right">${item.quantity}</td>
+                <td class="right">€${parseFloat(item.price).toFixed(2)}</td>
+                <td class="right">€${((parseFloat(item.quantity) || 0) * (parseFloat(item.price) || 0)).toFixed(2)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <div class="totals">
+          <div class="totals-row total">
+            <div class="totals-label">Total:</div>
+            <div class="totals-value">€${total}</div>
+          </div>
+          <div class="totals-row">
+            <div class="totals-label">Paid Amount:</div>
+            <div class="totals-value">€${parseFloat(paidAmount || '0').toFixed(2)}</div>
+          </div>
+          <div class="totals-row" style="font-weight: bold; color: ${isPaid ? '#22c55e' : '#ef4444'};">
+            <div class="totals-label">Balance:</div>
+            <div class="totals-value">€${(parseFloat(total) - parseFloat(paidAmount || '0')).toFixed(2)}</div>
+          </div>
+        </div>
+
+        <script>
+          window.onload = function() {
+            window.print();
+          }
+        </script>
+      </body>
+      </html>
+    `)
+    
+    printWindow.document.close()
+  }
+
+  const handleSubmit = async (e: React.FormEvent, shouldPrint: boolean = false) => {
     e.preventDefault()
     setError('')
     setIsSubmitting(true)
@@ -208,6 +404,10 @@ export default function NewOrderPage() {
         setError(data.error || 'Failed to create order')
         setIsSubmitting(false)
         return
+      }
+
+      if (shouldPrint && data.id) {
+        handlePrint(data.id.toString())
       }
 
       router.push('/orders')
@@ -459,6 +659,17 @@ export default function NewOrderPage() {
               className="px-6 py-3 backdrop-blur-xl bg-white/50 dark:bg-slate-800/50 border border-white/20 dark:border-slate-700/50 text-slate-900 dark:text-white rounded-xl hover:shadow-lg transition-all font-medium"
             >
               Cancel
+            </button>
+            <button
+              type="button"
+              onClick={(e) => handleSubmit(e as any, true)}
+              disabled={isSubmitting}
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+              </svg>
+              {isSubmitting ? 'Creating...' : 'Save & Print'}
             </button>
             <button
               type="submit"
