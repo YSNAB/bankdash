@@ -298,7 +298,11 @@ export default function ProductsPage() {
                 </thead>
                 <tbody className="divide-y divide-white/10 dark:divide-slate-800/50">
                   {products.map((product) => (
-                    <tr key={product.id} className="hover:bg-white/30 dark:hover:bg-slate-800/30 transition-colors">
+                    <tr 
+                      key={product.id} 
+                      onClick={() => router.push(`/products/${product.id}`)}
+                      className="hover:bg-white/30 dark:hover:bg-slate-800/30 cursor-pointer transition-colors"
+                    >
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white">
                         {product.id}
                       </td>
