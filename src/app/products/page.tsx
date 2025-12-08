@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import * as XLSX from 'xlsx'
 
 interface Product {
   id: number
@@ -87,6 +88,31 @@ export default function ProductsPage() {
     router.push('/')
   }
 
+  const exportToExcel = () => {
+    // Prepare data for export
+    const exportData = products.map(product => ({
+      'ID': product.id,
+      'Name': product.name,
+      'EAN': product.ean || '',
+      'Current Stock': product.currentStock,
+      'Avg Purchase Price': `€${product.avgPurchasePrice.toFixed(2)}`,
+    }))
+
+    // Create worksheet
+    const ws = XLSX.utils.json_to_sheet(exportData)
+    
+    // Create workbook
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Products')
+    
+    // Generate filename with current date
+    const date = new Date().toISOString().split('T')[0]
+    const filename = `products_${date}.xlsx`
+    
+    // Download file
+    XLSX.writeFile(wb, filename)
+  }
+
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950">
@@ -124,12 +150,20 @@ export default function ProductsPage() {
           <h2 className="text-xl font-semibold text-zinc-900 dark:text-white">
             Product List ({products.length})
           </h2>
-          <button
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="px-4 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors"
-          >
-            {showAddForm ? 'Cancel' : '+ Add Product'}
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={exportToExcel}
+              className="px-4 py-2 bg-green-600 dark:bg-green-700 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-800 transition-colors"
+            >
+              📊 Export to Excel
+            </button>
+            <button
+              onClick={() => setShowAddForm(!showAddForm)}
+              className="px-4 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors"
+            >
+              {showAddForm ? 'Cancel' : '+ Add Product'}
+            </button>
+          </div>
         </div>
 
         {showAddForm && (
