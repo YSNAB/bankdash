@@ -7,7 +7,7 @@ interface Product {
   id: number
   name: string
   ean: string | null
-  stock: number
+  currentStock: number
 }
 
 export default function ProductsPage() {
@@ -224,7 +224,7 @@ export default function ProductsPage() {
                       EAN
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                      Stock
+                      Current Stock
                     </th>
                   </tr>
                 </thead>
@@ -241,7 +241,7 @@ export default function ProductsPage() {
                         {product.ean || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-900 dark:text-white">
-                        {product.stock}
+                        {product.currentStock}
                       </td>
                     </tr>
                   ))}

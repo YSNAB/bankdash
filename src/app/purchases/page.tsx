@@ -32,6 +32,7 @@ export default function PurchasesPage() {
   const router = useRouter()
   const [purchases, setPurchases] = useState<Purchase[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [deleting, setDeleting] = useState<number | null>(null)
 
   useEffect(() => {
     // Check if user is logged in
@@ -65,6 +66,32 @@ export default function PurchasesPage() {
 
   const calculateTotal = (details: PurchaseDetail[]) => {
     return details.reduce((sum, item) => sum + (item.quantity * item.price), 0).toFixed(2)
+  }
+
+  const deletePurchase = async (e: React.MouseEvent, id: number) => {
+    e.stopPropagation() // Prevent row click
+    if (!confirm('Weet je zeker dat je deze purchase order wilt verwijderen? De voorraad wordt teruggedraaid.')) {
+      return
+    }
+
+    setDeleting(id)
+    try {
+      const response = await fetch(`/api/purchases?id=${id}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to delete purchase')
+      }
+
+      await fetchPurchases()
+    } catch (error) {
+      console.error('Error deleting purchase:', error)
+      alert('Er is een fout opgetreden bij het verwijderen van de purchase order')
+    } finally {
+      setDeleting(null)
+    }
   }
 
   if (isLoading) {
@@ -134,6 +161,9 @@ export default function PurchasesPage() {
                     <th className="px-6 py-3 text-right text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                       Total
                     </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                      Acties
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-zinc-900 divide-y divide-zinc-200 dark:divide-zinc-800">
@@ -154,6 +184,15 @@ export default function PurchasesPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-zinc-900 dark:text-white">
                         €{calculateTotal(purchase.purchaseDetails)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                        <button
+                          onClick={(e) => deletePurchase(e, purchase.id)}
+                          disabled={deleting === purchase.id}
+                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                        >
+                          {deleting === purchase.id ? 'Verwijderen...' : 'Verwijder'}
+                        </button>
                       </td>
                     </tr>
                   ))}

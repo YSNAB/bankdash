@@ -45,7 +45,7 @@ export async function POST(request: Request) {
       data: {
         name: name.trim(),
         ean: ean && ean.trim() ? ean.trim() : null,
-        stock: stockValue,
+        currentStock: stockValue,
       },
     })
 

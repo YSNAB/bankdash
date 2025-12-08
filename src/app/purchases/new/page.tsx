@@ -11,7 +11,7 @@ interface Supplier {
 interface Product {
   id: number
   name: string
-  stock: number
+  currentStock: number
 }
 
 interface PurchaseItem {
@@ -330,7 +330,7 @@ export default function NewPurchasePage() {
                             onClick={() => selectProduct(index, product)}
                             className="w-full px-3 py-2 text-left text-sm hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-900 dark:text-white"
                           >
-                            {product.name} <span className="text-zinc-500 dark:text-zinc-400">(Stock: {product.stock})</span>
+                            {product.name} <span className="text-zinc-500 dark:text-zinc-400">(Stock: {product.currentStock})</span>
                           </button>
                         ))}
                       </div>

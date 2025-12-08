@@ -24,8 +24,9 @@ model Product {
   id              Int              @id @default(autoincrement())
   name            String
   ean             String?
-  stock           Int
+  currentStock    Int              @default(0) @map("current_stock")
   purchaseDetails PurchaseDetail[] @relation("ProductToPurchaseDetail")
+  stockMovements  StockMovement[]
 
   @@map("products")
 }
@@ -62,4 +63,29 @@ model PurchaseDetail {
   product   Product  @relation("ProductToPurchaseDetail", fields: [productId], references: [id])
 
   @@map("purchase_details")
+}
+
+// Stock movements model
+enum MovementType {
+  PURCHASE
+  SALE
+  RETURN
+  ADJUSTMENT
+  STOCKTAKE
+}
+
+model StockMovement {
+  id              Int          @id @default(autoincrement())
+  productId       Int          @map("product_id")
+  datetime        DateTime     @default(now()) @db.Timestamptz(6)
+  quantity        Int // Positive = in, Negative = out
+  type            MovementType
+  reference       String? // Optional reference like "PO-123" or "SALE-456"
+  purchaseOrderId Int?         @map("purchase_order_id")
+  notes           String?
+  product         Product      @relation(fields: [productId], references: [id])
+
+  @@map("stock_movements")
+  @@index([productId])
+  @@index([datetime])
 }
