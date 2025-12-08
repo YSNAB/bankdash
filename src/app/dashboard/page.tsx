@@ -69,14 +69,17 @@ export default function DashboardPage() {
             </p>
           </button>
 
-          <div className="bg-white dark:bg-zinc-900 shadow rounded-lg p-6">
+          <button
+            onClick={() => router.push('/orders')}
+            className="bg-white dark:bg-zinc-900 shadow rounded-lg p-6 text-left hover:shadow-lg transition-shadow"
+          >
             <h3 className="text-lg font-semibold text-zinc-900 dark:text-white mb-2">
-              Suppliers
+              Orders
             </h3>
             <p className="text-zinc-600 dark:text-zinc-400 text-sm">
-              Manage supplier information
+              View and create customer orders
             </p>
-          </div>
+          </button>
 
           <button
             onClick={() => router.push('/purchases')}

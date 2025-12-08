@@ -26,6 +26,7 @@ model Product {
   ean             String?
   currentStock    Int              @default(0) @map("current_stock")
   purchaseDetails PurchaseDetail[] @relation("ProductToPurchaseDetail")
+  orderDetails    OrderDetail[]    @relation("ProductToOrderDetail")
   stockMovements  StockMovement[]
 
   @@map("products")
@@ -38,6 +39,15 @@ model Supplier {
   purchases Purchase[] @relation("SupplierToPurchase")
 
   @@map("suppliers")
+}
+
+// Customers model
+model Customer {
+  id     Int     @id @default(autoincrement())
+  name   String
+  orders Order[] @relation("CustomerToOrder")
+
+  @@map("customers")
 }
 
 // Purchases (orders) model
@@ -63,6 +73,31 @@ model PurchaseDetail {
   product   Product  @relation("ProductToPurchaseDetail", fields: [productId], references: [id])
 
   @@map("purchase_details")
+}
+
+// Orders model (customer orders)
+model Order {
+  id          Int           @id @default(autoincrement())
+  customerId  Int           @map("customer_id")
+  date        DateTime      @db.Timestamptz(6)
+  paymentType String        @map("payment_type") // "cash" or "factuur"
+  customer    Customer      @relation("CustomerToOrder", fields: [customerId], references: [id])
+  orderDetails OrderDetail[] @relation("OrderToOrderDetail")
+
+  @@map("orders")
+}
+
+// Order details (customer order line items) model
+model OrderDetail {
+  id        Int     @id @default(autoincrement())
+  orderId   Int     @map("order_id")
+  productId Int     @map("product_id")
+  quantity  Int
+  price     Float
+  order     Order   @relation("OrderToOrderDetail", fields: [orderId], references: [id])
+  product   Product @relation("ProductToOrderDetail", fields: [productId], references: [id])
+
+  @@map("order_details")
 }
 
 // Stock movements model
