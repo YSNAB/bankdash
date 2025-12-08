@@ -8,6 +8,7 @@ interface Product {
   name: string
   ean: string | null
   currentStock: number
+  avgPurchasePrice: number
 }
 
 export default function ProductsPage() {
@@ -223,8 +224,11 @@ export default function ProductsPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                       EAN
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-right text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                       Current Stock
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                      Avg Purchase Price
                     </th>
                   </tr>
                 </thead>
@@ -240,8 +244,11 @@ export default function ProductsPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500 dark:text-zinc-400">
                         {product.ean || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-900 dark:text-white">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-zinc-900 dark:text-white">
                         {product.currentStock}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-zinc-900 dark:text-white">
+                        €{product.avgPurchasePrice.toFixed(2)}
                       </td>
                     </tr>
                   ))}

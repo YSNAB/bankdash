@@ -9,7 +9,41 @@ export async function GET() {
         id: 'desc',
       },
     })
-    return NextResponse.json(products)
+
+    // Calculate weighted average purchase price for each product
+    const productsWithAvgPrice = await Promise.all(
+      products.map(async (product) => {
+        const purchases = await prisma.purchaseDetail.findMany({
+          where: {
+            productId: product.id,
+          },
+          select: {
+            quantity: true,
+            price: true,
+          },
+        })
+
+        let avgPurchasePrice = 0
+        if (purchases.length > 0) {
+          const totalCost = purchases.reduce(
+            (sum, p) => sum + p.quantity * p.price,
+            0
+          )
+          const totalQuantity = purchases.reduce(
+            (sum, p) => sum + p.quantity,
+            0
+          )
+          avgPurchasePrice = totalQuantity > 0 ? totalCost / totalQuantity : 0
+        }
+
+        return {
+          ...product,
+          avgPurchasePrice,
+        }
+      })
+    )
+
+    return NextResponse.json(productsWithAvgPrice)
   } catch (error) {
     console.error('Error fetching products:', error)
     return NextResponse.json(
