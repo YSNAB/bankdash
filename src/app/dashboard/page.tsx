@@ -3,9 +3,20 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
+interface LowStockProduct {
+  id: number
+  name: string
+  currentStock: number
+  minimalStock: number
+  percentage: number
+}
+
 export default function DashboardPage() {
   const router = useRouter()
   const [user, setUser] = useState<{ username: string; name?: string | null } | null>(null)
+  const [lowStockProducts, setLowStockProducts] = useState<LowStockProduct[]>([])
+  const [isLoadingStock, setIsLoadingStock] = useState(true)
+  const [showAllLowStock, setShowAllLowStock] = useState(false)
 
   useEffect(() => {
     // Check if user is logged in
@@ -15,7 +26,22 @@ export default function DashboardPage() {
       return
     }
     setUser(JSON.parse(userData))
+    fetchLowStockProducts()
   }, [router])
+
+  const fetchLowStockProducts = async () => {
+    try {
+      const response = await fetch('/api/products/low-stock')
+      if (response.ok) {
+        const data = await response.json()
+        setLowStockProducts(data)
+      }
+    } catch (error) {
+      console.error('Error fetching low stock products:', error)
+    } finally {
+      setIsLoadingStock(false)
+    }
+  }
 
   const handleLogout = () => {
     localStorage.removeItem('user')
@@ -57,9 +83,8 @@ export default function DashboardPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-
         {/* Glass tile cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           <button
             onClick={() => router.push('/products')}
             className="group relative backdrop-blur-xl bg-gradient-to-br from-white/70 to-white/50 dark:from-slate-900/70 dark:to-slate-900/50 border border-white/20 dark:border-slate-800/50 rounded-3xl p-8 text-left hover:scale-105 hover:shadow-2xl transition-all duration-300"
@@ -114,6 +139,71 @@ export default function DashboardPage() {
             </div>
           </button>
         </div>
+
+        {/* Low Stock Warning */}
+        {!isLoadingStock && lowStockProducts.length > 0 && (
+          <div className="mt-8 backdrop-blur-xl bg-gradient-to-r from-orange-50/80 to-red-50/80 dark:from-orange-900/20 dark:to-red-900/20 border border-orange-200/50 dark:border-orange-800/50 rounded-3xl p-6 shadow-xl">
+            <div className="flex items-start gap-4 mb-4">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center shadow-lg flex-shrink-0">
+                <span className="text-2xl">⚠️</span>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-1">
+                  Low Stock Alert
+                </h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  {lowStockProducts.length} product{lowStockProducts.length > 1 ? 's' : ''} approaching minimum stock level
+                </p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {(showAllLowStock ? lowStockProducts : lowStockProducts.slice(0, 5)).map((product) => (
+                <div
+                  key={product.id}
+                  className="backdrop-blur-xl bg-white/50 dark:bg-slate-800/50 border border-white/30 dark:border-slate-700/30 rounded-xl p-4 flex items-center justify-between hover:bg-white/70 dark:hover:bg-slate-800/70 transition-all"
+                >
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-slate-900 dark:text-white">
+                      {product.name}
+                    </h4>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                      Current: {product.currentStock} | Min: {product.minimalStock}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <div className={`text-sm font-bold ${
+                        product.percentage <= 20 ? 'text-red-600 dark:text-red-400' :
+                        product.percentage <= 50 ? 'text-orange-600 dark:text-orange-400' :
+                        'text-yellow-600 dark:text-yellow-400'
+                      }`}>
+                        {product.percentage.toFixed(0)}%
+                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
+                        above min
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => router.push('/products')}
+                      className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-medium rounded-lg transition-all shadow-lg hover:shadow-xl"
+                    >
+                      View
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {lowStockProducts.length > 5 && (
+              <button
+                onClick={() => setShowAllLowStock(!showAllLowStock)}
+                className="mt-4 w-full py-3 backdrop-blur-xl bg-white/50 dark:bg-slate-800/50 hover:bg-white/70 dark:hover:bg-slate-800/70 border border-white/30 dark:border-slate-700/30 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 transition-all"
+              >
+                {showAllLowStock ? 'Show Less' : `Show ${lowStockProducts.length - 5} More`}
+              </button>
+            )}
+          </div>
+        )}
+
       </main>
     </div>
   )
