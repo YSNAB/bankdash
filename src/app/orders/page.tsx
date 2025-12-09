@@ -35,9 +35,13 @@ export default function OrdersPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [orders, setOrders] = useState<Order[]>([])
+  const [customers, setCustomers] = useState<Customer[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [deleting, setDeleting] = useState<number | null>(null)
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('')
+  const [customerSearch, setCustomerSearch] = useState<string>('')
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false)
+  const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'paid'>('all')
 
   useEffect(() => {
     // Check if user is logged in
@@ -47,14 +51,21 @@ export default function OrdersPage() {
       return
     }
     
-    // Get customerId from URL if present
-    const customerId = searchParams.get('customerId')
-    if (customerId) {
-      setSelectedCustomerId(customerId)
-    }
-    
     fetchOrders()
+    fetchCustomers()
   }, [router, searchParams])
+
+  // Separate effect to set customer from URL after customers are loaded
+  useEffect(() => {
+    const customerId = searchParams.get('customerId')
+    if (customerId && customers.length > 0) {
+      setSelectedCustomerId(customerId)
+      const customer = customers.find(c => c.id.toString() === customerId)
+      if (customer) {
+        setCustomerSearch(customer.name)
+      }
+    }
+  }, [searchParams, customers])
 
   const fetchOrders = async () => {
     try {
@@ -67,6 +78,18 @@ export default function OrdersPage() {
       console.error('Error fetching orders:', error)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const fetchCustomers = async () => {
+    try {
+      const response = await fetch('/api/customers')
+      if (response.ok) {
+        const data = await response.json()
+        setCustomers(data)
+      }
+    } catch (error) {
+      console.error('Error fetching customers:', error)
     }
   }
 
@@ -109,12 +132,28 @@ export default function OrdersPage() {
     }
   }
 
-  const filteredOrders = selectedCustomerId
-    ? orders.filter(order => order.customerId.toString() === selectedCustomerId)
-    : orders
+  const filteredOrders = orders.filter(order => {
+    // Filter by customer
+    if (selectedCustomerId && order.customerId.toString() !== selectedCustomerId) {
+      return false
+    }
+    
+    // Filter by status
+    if (statusFilter !== 'all') {
+      const totalAmount = calculateTotalNumber(order.orderDetails)
+      const isPaid = order.paidAmount >= totalAmount
+      if (statusFilter === 'paid' && !isPaid) return false
+      if (statusFilter === 'open' && isPaid) return false
+    }
+    
+    return true
+  })
 
   const clearFilter = () => {
     setSelectedCustomerId('')
+    setCustomerSearch('')
+    setShowCustomerDropdown(false)
+    setStatusFilter('all')
     router.push('/orders')
   }
 
@@ -159,37 +198,102 @@ export default function OrdersPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="mb-8 flex justify-between items-center">
-          <div>
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
               Customer Orders <span className="text-slate-500 dark:text-slate-400 text-lg">({filteredOrders.length})</span>
             </h2>
-            {selectedCustomerId && (
-              <div className="mt-2 flex items-center gap-2">
-                <span className="text-sm text-slate-600 dark:text-slate-400">
-                  Gefilterd op: <span className="font-semibold">{filteredOrders[0]?.customer.name || 'Klant'}</span>
-                </span>
+            <button
+              onClick={() => router.push('/orders/new')}
+              className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 font-medium"
+            >
+              + New Order
+            </button>
+          </div>
+          
+          {/* Filter Controls */}
+          <div className="backdrop-blur-xl bg-white/70 dark:bg-slate-900/70 border border-white/20 dark:border-slate-800/50 shadow-lg rounded-2xl p-4 mb-4">
+            <div className="flex flex-wrap gap-4 items-center">
+              <div className="flex items-center gap-2 relative">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Klant:</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={customerSearch}
+                    onChange={(e) => {
+                      setCustomerSearch(e.target.value)
+                      setShowCustomerDropdown(e.target.value.length > 0)
+                      if (e.target.value.length === 0) {
+                        setSelectedCustomerId('')
+                      }
+                    }}
+                    onFocus={() => customerSearch.length > 0 && setShowCustomerDropdown(true)}
+                    placeholder="Type om te zoeken..."
+                    className="px-3 py-2 w-64 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+                  />
+                  {showCustomerDropdown && customerSearch.length > 0 && (
+                    <div className="absolute z-50 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {customers
+                        .filter(customer => 
+                          customer.name.toLowerCase().includes(customerSearch.toLowerCase())
+                        )
+                        .map(customer => (
+                          <button
+                            key={customer.id}
+                            onClick={() => {
+                              setSelectedCustomerId(customer.id.toString())
+                              setCustomerSearch(customer.name)
+                              setShowCustomerDropdown(false)
+                            }}
+                            className="w-full text-left px-3 py-2 hover:bg-blue-50 dark:hover:bg-slate-700 text-sm text-slate-900 dark:text-white transition-colors"
+                          >
+                            {customer.name}
+                          </button>
+                        ))
+                      }
+                      {customers.filter(customer => 
+                        customer.name.toLowerCase().includes(customerSearch.toLowerCase())
+                      ).length === 0 && (
+                        <div className="px-3 py-2 text-sm text-slate-500 dark:text-slate-400">
+                          Geen klanten gevonden
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Status:</label>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as 'all' | 'open' | 'paid')}
+                  className="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+                >
+                  <option value="all">Alle orders</option>
+                  <option value="open">Open</option>
+                  <option value="paid">Betaald</option>
+                </select>
+              </div>
+              
+              {(selectedCustomerId || statusFilter !== 'all') && (
                 <button
                   onClick={clearFilter}
-                  className="px-3 py-1 text-xs bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                  className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg transition-colors font-medium"
                 >
-                  × Filter wissen
+                  × Filters wissen
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-          <button
-            onClick={() => router.push('/orders/new')}
-            className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 font-medium"
-          >
-            + New Order
-          </button>
         </div>
 
         <div className="backdrop-blur-xl bg-white/70 dark:bg-slate-900/70 border border-white/20 dark:border-slate-800/50 shadow-2xl rounded-3xl overflow-hidden">
           {filteredOrders.length === 0 ? (
             <div className="p-12 text-center text-slate-500 dark:text-slate-400">
-              {selectedCustomerId ? 'Geen orders gevonden voor deze klant.' : 'No orders yet. Create your first order to get started.'}
+              {(selectedCustomerId || statusFilter !== 'all') 
+                ? 'Geen orders gevonden met de geselecteerde filters.' 
+                : 'No orders yet. Create your first order to get started.'}
             </div>
           ) : (
             <div className="overflow-x-auto">

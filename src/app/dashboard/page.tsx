@@ -194,7 +194,7 @@ export default function DashboardPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Glass tile cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <button
             onClick={() => router.push('/products')}
             className="group relative backdrop-blur-xl bg-gradient-to-br from-white/70 to-white/50 dark:from-slate-900/70 dark:to-slate-900/50 border border-white/20 dark:border-slate-800/50 rounded-3xl p-8 text-left hover:scale-105 hover:shadow-2xl transition-all duration-300"
@@ -259,11 +259,11 @@ export default function DashboardPage() {
                 <span className="text-2xl">👥</span>
               </div>
               <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
-                Klanten
+                Customers
               </h3>
-              <p className="text-slate-600 dark:text-slate-400 text-sm">
-                Bekijk klant overzicht en openstaande bedragen
-              </p>
+                <p className="text-slate-600 dark:text-slate-400 text-sm">
+                View customer overview and outstanding balances
+                </p>
             </div>
           </button>
         </div>
