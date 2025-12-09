@@ -17,6 +17,7 @@ export default function CustomersPage() {
   const router = useRouter()
   const [customers, setCustomers] = useState<CustomerStats[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     const userData = localStorage.getItem('user')
@@ -46,6 +47,14 @@ export default function CustomersPage() {
     localStorage.removeItem('user')
     router.push('/')
   }
+
+  const handleCustomerClick = (customerId: number) => {
+    router.push(`/orders?customerId=${customerId}`)
+  }
+
+  const filteredCustomers = customers.filter(customer =>
+    customer.name.toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
   if (isLoading) {
     return (
@@ -90,15 +99,29 @@ export default function CustomersPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="backdrop-blur-xl bg-white/70 dark:bg-slate-900/70 border border-white/20 dark:border-slate-800/50 shadow-2xl rounded-3xl overflow-hidden">
           <div className="px-8 py-6 border-b border-white/20 dark:border-slate-800/50">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-              Alle Klanten
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                Alle Klanten
+              </h2>
+            </div>
+            <div className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Zoek klanten..."
+                className="w-full px-4 py-3 pl-12 bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white transition-all shadow-sm"
+              />
+              <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
           </div>
 
-          {customers.length === 0 ? (
+          {filteredCustomers.length === 0 ? (
             <div className="px-8 py-12 text-center">
               <p className="text-slate-600 dark:text-slate-400 text-lg">
-                Geen klanten gevonden
+                {searchQuery ? 'Geen klanten gevonden met deze zoekterm' : 'Geen klanten gevonden'}
               </p>
             </div>
           ) : (
@@ -124,10 +147,11 @@ export default function CustomersPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/10 dark:divide-slate-800/50">
-                  {customers.map((customer) => (
+                  {filteredCustomers.map((customer) => (
                     <tr 
                       key={customer.id}
-                      className="hover:bg-white/30 dark:hover:bg-slate-800/30 transition-colors"
+                      onClick={() => handleCustomerClick(customer.id)}
+                      className="hover:bg-white/30 dark:hover:bg-slate-800/30 transition-colors cursor-pointer"
                     >
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-slate-900 dark:text-white">
                         {customer.name}
@@ -158,16 +182,16 @@ export default function CustomersPage() {
                       Totaal
                     </td>
                     <td className="px-6 py-4 text-sm text-center font-bold text-slate-900 dark:text-white">
-                      {customers.reduce((sum, c) => sum + c.totalOrders, 0)}
+                      {filteredCustomers.reduce((sum, c) => sum + c.totalOrders, 0)}
                     </td>
                     <td className="px-6 py-4 text-sm text-right font-bold text-slate-900 dark:text-white">
-                      {formatPrice(customers.reduce((sum, c) => sum + c.totalRevenue, 0))}
+                      {formatPrice(filteredCustomers.reduce((sum, c) => sum + c.totalRevenue, 0))}
                     </td>
                     <td className="px-6 py-4 text-sm text-right font-bold text-green-700 dark:text-green-400">
-                      {formatPrice(customers.reduce((sum, c) => sum + c.totalPaid, 0))}
+                      {formatPrice(filteredCustomers.reduce((sum, c) => sum + c.totalPaid, 0))}
                     </td>
                     <td className="px-6 py-4 text-sm text-right font-bold text-red-700 dark:text-red-400">
-                      {formatPrice(customers.reduce((sum, c) => sum + c.openAmount, 0))}
+                      {formatPrice(filteredCustomers.reduce((sum, c) => sum + c.openAmount, 0))}
                     </td>
                   </tr>
                 </tfoot>
