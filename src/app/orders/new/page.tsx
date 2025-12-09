@@ -154,12 +154,25 @@ export default function NewOrderPage() {
     setFilteredProducts(newFilteredProducts)
   }
 
-  const calculateTotal = () => {
+  const calculateSubtotal = () => {
     return items.reduce((sum, item) => {
       const quantity = parseFloat(item.quantity) || 0
       const price = parseFloat(item.price) || 0
       return sum + (quantity * price)
-    }, 0).toFixed(2)
+    }, 0)
+  }
+
+  const calculateVAT = () => {
+    if (paymentType === 'factuur') {
+      return calculateSubtotal() * 0.21
+    }
+    return 0
+  }
+
+  const calculateTotal = () => {
+    const subtotal = calculateSubtotal()
+    const vat = calculateVAT()
+    return (subtotal + vat).toFixed(2)
   }
 
   const handlePrint = (orderId: string) => {
@@ -340,8 +353,18 @@ export default function NewOrderPage() {
         </table>
 
         <div class="totals">
+          ${paymentType === 'factuur' ? `
+          <div class="totals-row">
+            <div class="totals-label">Subtotal (excl. BTW):</div>
+            <div class="totals-value">${formatPrice(calculateSubtotal())}</div>
+          </div>
+          <div class="totals-row">
+            <div class="totals-label">BTW (21%):</div>
+            <div class="totals-value">${formatPrice(calculateVAT())}</div>
+          </div>
+          ` : ''}
           <div class="totals-row total">
-            <div class="totals-label">Total:</div>
+            <div class="totals-label">Total${paymentType === 'factuur' ? ' (incl. BTW)' : ''}:</div>
             <div class="totals-value">${formatPrice(parseFloat(total))}</div>
           </div>
           <div class="totals-row">
@@ -625,8 +648,20 @@ export default function NewOrderPage() {
             </div>
 
             <div className="mt-8 pt-6 border-t border-white/20 dark:border-slate-700/50">
+              {paymentType === 'factuur' && (
+                <>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-slate-700 dark:text-slate-300">Subtotal (excl. BTW):</span>
+                    <span className="text-slate-900 dark:text-white">{formatPrice(calculateSubtotal())}</span>
+                  </div>
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="text-slate-700 dark:text-slate-300">BTW (21%):</span>
+                    <span className="text-slate-900 dark:text-white">{formatPrice(calculateVAT())}</span>
+                  </div>
+                </>
+              )}
               <div className="flex justify-between items-center text-xl font-bold mb-4">
-                <span className="text-slate-900 dark:text-white">Total:</span>
+                <span className="text-slate-900 dark:text-white">Total{paymentType === 'factuur' ? ' (incl. BTW)' : ''}:</span>
                 <span className="text-green-700 dark:text-green-400">{formatPrice(parseFloat(calculateTotal()))}</span>
               </div>
               <div className="flex justify-between items-center gap-4">

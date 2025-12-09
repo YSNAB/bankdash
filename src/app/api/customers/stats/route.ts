@@ -21,11 +21,15 @@ export async function GET() {
     const customerStats = customers.map((customer) => {
       const totalOrders = customer.orders.length
       
-      // Bereken totale omzet (som van alle order totalen)
+      // Bereken totale omzet (som van alle order totalen inclusief BTW voor factuur)
       const totalRevenue = customer.orders.reduce((sum: number, order) => {
-        const orderTotal = order.orderDetails.reduce((orderSum: number, detail) => {
+        const orderSubtotal = order.orderDetails.reduce((orderSum: number, detail) => {
           return orderSum + (detail.quantity * detail.price)
         }, 0)
+        // Voeg 21% BTW toe voor factuur orders
+        const orderTotal = order.paymentType === 'factuur' 
+          ? orderSubtotal * 1.21 
+          : orderSubtotal
         return sum + orderTotal
       }, 0)
       

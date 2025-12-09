@@ -98,12 +98,25 @@ function OrdersContent() {
     router.push('/')
   }
 
-  const calculateTotalNumber = (details: OrderDetail[]) => {
+  const calculateSubtotal = (details: OrderDetail[]) => {
     return details.reduce((sum, item) => sum + (item.quantity * item.price), 0)
   }
 
-  const calculateTotal = (details: OrderDetail[]) => {
-    return formatPrice(calculateTotalNumber(details))
+  const calculateVAT = (details: OrderDetail[], paymentType: string) => {
+    if (paymentType === 'factuur') {
+      return calculateSubtotal(details) * 0.21
+    }
+    return 0
+  }
+
+  const calculateTotalNumber = (details: OrderDetail[], paymentType: string) => {
+    const subtotal = calculateSubtotal(details)
+    const vat = calculateVAT(details, paymentType)
+    return subtotal + vat
+  }
+
+  const calculateTotal = (details: OrderDetail[], paymentType: string) => {
+    return formatPrice(calculateTotalNumber(details, paymentType))
   }
 
   const deleteOrder = async (e: React.MouseEvent, id: number) => {
@@ -140,7 +153,7 @@ function OrdersContent() {
     
     // Filter by status
     if (statusFilter !== 'all') {
-      const totalAmount = calculateTotalNumber(order.orderDetails)
+      const totalAmount = calculateTotalNumber(order.orderDetails, order.paymentType)
       const isPaid = order.paidAmount >= totalAmount
       if (statusFilter === 'paid' && !isPaid) return false
       if (statusFilter === 'open' && isPaid) return false
@@ -350,15 +363,21 @@ function OrdersContent() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
                         <span className={`px-3 py-1.5 rounded-xl text-xs font-semibold shadow-sm ${
-                          calculateTotalNumber(order.orderDetails) <= order.paidAmount
+                          calculateTotalNumber(order.orderDetails, order.paymentType) <= order.paidAmount
                             ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white' 
+                            : order.paidAmount > 0
+                            ? 'bg-gradient-to-r from-yellow-500 to-amber-600 text-white'
                             : 'bg-gradient-to-r from-red-500 to-rose-600 text-white'
                         }`}>
-                          {calculateTotalNumber(order.orderDetails) <= order.paidAmount ? 'Paid' : 'Open'}
+                          {calculateTotalNumber(order.orderDetails, order.paymentType) <= order.paidAmount 
+                            ? 'Paid' 
+                            : order.paidAmount > 0 
+                            ? 'Partly Open' 
+                            : 'Open'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-green-700 dark:text-green-400">
-                        {calculateTotal(order.orderDetails)}
+                        {calculateTotal(order.orderDetails, order.paymentType)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
                         <button
