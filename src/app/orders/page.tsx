@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { formatPrice } from '@/lib/formatPrice'
 
@@ -31,7 +31,7 @@ interface Order {
   orderDetails: OrderDetail[]
 }
 
-export default function OrdersPage() {
+function OrdersContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [orders, setOrders] = useState<Order[]>([])
@@ -378,5 +378,17 @@ export default function OrdersPage() {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function OrdersPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+        <div className="text-slate-600 dark:text-slate-400 text-lg">Loading...</div>
+      </div>
+    }>
+      <OrdersContent />
+    </Suspense>
   )
 }
