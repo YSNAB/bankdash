@@ -248,6 +248,24 @@ export default function DashboardPage() {
               </p>
             </div>
           </button>
+
+          <button
+            onClick={() => router.push('/customers')}
+            className="group relative backdrop-blur-xl bg-gradient-to-br from-white/70 to-white/50 dark:from-slate-900/70 dark:to-slate-900/50 border border-white/20 dark:border-slate-800/50 rounded-3xl p-8 text-left hover:scale-105 hover:shadow-2xl transition-all duration-300"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-red-600/10 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <div className="relative">
+              <div className="w-14 h-14 mb-4 rounded-2xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center shadow-lg">
+                <span className="text-2xl">👥</span>
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+                Klanten
+              </h3>
+              <p className="text-slate-600 dark:text-slate-400 text-sm">
+                Bekijk klant overzicht en openstaande bedragen
+              </p>
+            </div>
+          </button>
         </div>
 
         {/* Revenue Chart */}
