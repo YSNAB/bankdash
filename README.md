@@ -118,8 +118,34 @@ Don't forget to add your `DATABASE_URL` environment variable in your deployment 
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
-### Handy
+## Handy
 
 run `npx tsx scripts/add-user.ts` to add user for this application. 
 
-.
+### Database
+
+#### Development
+npm run dev  # Uses .env.local automatically
+
+#### Production build
+npm run build  # Uses .env.production.local if it exists
+
+#### Run migrations in development
+npx prisma migrate dev --name your_migration_name
+
+#### Deploy migrations to production
+$env:NODE_ENV="production"; npx prisma migrate deploy
+
+#### View database in development
+npx prisma studio
+
+# DEVELOPMENT (uses .env.local)
+npm run dev                         # Run dev server
+npx prisma migrate dev              # Create & apply migration
+npx prisma studio                   # Database GUI
+npx prisma db push                  # Quick schema sync (no migration file)
+npx prisma migrate reset            # Reset & reseed database
+
+# PRODUCTION (uses .env.production.local)
+$env:NODE_ENV="production"; npx prisma migrate deploy  # Apply pending migrations
+$env:NODE_ENV="production"; npx prisma migrate status  # Check migration status
