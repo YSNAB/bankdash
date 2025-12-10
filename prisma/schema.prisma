@@ -46,6 +46,7 @@ model Supplier {
 model Customer {
   id     Int     @id @default(autoincrement())
   name   String
+  region String  @default("NL") // NL, EU, or Non-EU
   orders Order[] @relation("CustomerToOrder")
 
   @@map("customers")

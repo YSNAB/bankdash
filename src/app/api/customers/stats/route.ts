@@ -44,6 +44,7 @@ export async function GET() {
       return {
         id: customer.id,
         name: customer.name,
+        region: customer.region,
         totalOrders,
         totalRevenue,
         totalPaid,

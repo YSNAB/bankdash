@@ -119,8 +119,12 @@ Don't forget to add your `DATABASE_URL` environment variable in your deployment 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
 ## Handy
+ 
+### Add user to development database (uses .env.local)
+npx tsx scripts/add-user.ts
 
-run `npx tsx scripts/add-user.ts` to add user for this application. 
+### Add user to production database (uses .env.production.local)
+$env:NODE_ENV="production"; npx tsx scripts/add-user.ts
 
 ### Database
 

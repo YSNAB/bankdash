@@ -6,7 +6,12 @@ import { PrismaPg } from '@prisma/adapter-pg'
 import { Pool } from 'pg'
 import * as bcrypt from 'bcrypt'
 import * as readline from 'readline'
-import 'dotenv/config'
+import { config } from 'dotenv'
+
+// Load environment-specific .env file
+const isProduction = process.env.NODE_ENV === "production"
+const envFile = isProduction ? ".env.production.local" : ".env.local"
+config({ path: envFile })
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 const adapter = new PrismaPg(pool)

@@ -22,7 +22,7 @@ export async function GET() {
 // POST create new customer
 export async function POST(request: Request) {
   try {
-    const { name } = await request.json()
+    const { name, region } = await request.json()
 
     if (!name || !name.trim()) {
       return NextResponse.json(
@@ -34,6 +34,7 @@ export async function POST(request: Request) {
     const customer = await prisma.customer.create({
       data: {
         name: name.trim(),
+        region: region || 'NL', // Default to NL if not provided
       },
     })
 

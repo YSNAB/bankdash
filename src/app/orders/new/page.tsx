@@ -7,6 +7,7 @@ import { formatPrice } from '@/lib/formatPrice'
 interface Customer {
   id: number
   name: string
+  region: string
 }
 
 interface Product {
@@ -39,6 +40,7 @@ export default function NewOrderPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showNewCustomer, setShowNewCustomer] = useState(false)
   const [newCustomerName, setNewCustomerName] = useState('')
+  const [newCustomerRegion, setNewCustomerRegion] = useState('NL')
 
   useEffect(() => {
     const userData = localStorage.getItem('user')
@@ -85,7 +87,7 @@ export default function NewOrderPage() {
       const response = await fetch('/api/customers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newCustomerName }),
+        body: JSON.stringify({ name: newCustomerName, region: newCustomerRegion }),
       })
 
       if (response.ok) {
@@ -93,6 +95,7 @@ export default function NewOrderPage() {
         setCustomers([...customers, newCustomer])
         setCustomerId(newCustomer.id.toString())
         setNewCustomerName('')
+        setNewCustomerRegion('NL')
         setShowNewCustomer(false)
       } else {
         setError('Failed to create customer')
@@ -508,21 +511,32 @@ export default function NewOrderPage() {
                 </div>
                 
                 {showNewCustomer && (
-                  <div className="mt-3 flex gap-2">
+                  <div className="mt-3 space-y-2">
                     <input
                       type="text"
                       value={newCustomerName}
                       onChange={(e) => setNewCustomerName(e.target.value)}
                       placeholder="New customer name"
-                      className="flex-1 px-3 py-2 text-sm bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white shadow-sm"
+                      className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white shadow-sm"
                     />
-                    <button
-                      type="button"
-                      onClick={addNewCustomer}
-                      className="px-4 py-2 text-sm bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all font-medium"
-                    >
-                      Add
-                    </button>
+                    <div className="flex gap-2">
+                      <select
+                        value={newCustomerRegion}
+                        onChange={(e) => setNewCustomerRegion(e.target.value)}
+                        className="flex-1 px-3 py-2 text-sm bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white shadow-sm"
+                      >
+                        <option value="NL">NL</option>
+                        <option value="EU">EU</option>
+                        <option value="Non-EU">Non-EU</option>
+                      </select>
+                      <button
+                        type="button"
+                        onClick={addNewCustomer}
+                        className="px-4 py-2 text-sm bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all font-medium"
+                      >
+                        Add
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

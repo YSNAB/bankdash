@@ -7,6 +7,7 @@ import { formatPrice } from '@/lib/formatPrice'
 interface CustomerStats {
   id: number
   name: string
+  region: string
   totalOrders: number
   totalRevenue: number
   totalPaid: number
@@ -133,6 +134,9 @@ export default function CustomersPage() {
                       Klant
                     </th>
                     <th className="px-6 py-4 text-center text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                      Regio
+                    </th>
+                    <th className="px-6 py-4 text-center text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                       Aantal Orders
                     </th>
                     <th className="px-6 py-4 text-right text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
@@ -155,6 +159,17 @@ export default function CustomersPage() {
                     >
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-slate-900 dark:text-white">
                         {customer.name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                        <span className={`px-3 py-1.5 rounded-xl text-xs font-semibold shadow-sm ${
+                          customer.region === 'NL' 
+                            ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white'
+                            : customer.region === 'EU'
+                            ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
+                            : 'bg-gradient-to-r from-purple-500 to-pink-600 text-white'
+                        }`}>
+                          {customer.region}
+                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-center font-medium text-slate-900 dark:text-white">
                         {customer.totalOrders}
