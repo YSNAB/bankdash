@@ -24,6 +24,12 @@ model Product {
   id              Int              @id @default(autoincrement())
   name            String
   ean             String?
+  conditionRegion String?          @map("condition_region")
+  brandSerie      String?          @map("brand_serie")
+  model           String?
+  storage         String?
+  color           String?
+  displayName     String?          @map("display_name")
   currentStock    Int              @default(0) @map("current_stock")
   minimalStock    Int?             @map("minimal_stock")
   purchaseDetails PurchaseDetail[] @relation("ProductToPurchaseDetail")
