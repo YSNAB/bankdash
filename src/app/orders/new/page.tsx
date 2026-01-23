@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { formatPrice } from '@/lib/formatPrice'
+import { requireAdmin } from '@/lib/auth'
 
 interface Customer {
   id: number
@@ -43,9 +44,9 @@ export default function NewOrderPage() {
   const [newCustomerRegion, setNewCustomerRegion] = useState('NL')
 
   useEffect(() => {
-    const userData = localStorage.getItem('user')
-    if (!userData) {
-      router.push('/')
+    try {
+      requireAdmin()
+    } catch {
       return
     }
     

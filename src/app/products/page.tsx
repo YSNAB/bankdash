@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { requireAdmin } from '@/lib/auth'
 import * as XLSX from 'xlsx'
 import { formatPrice } from '@/lib/formatPrice'
 
@@ -29,10 +30,10 @@ export default function ProductsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
-    // Check if user is logged in
-    const userData = localStorage.getItem('user')
-    if (!userData) {
-      router.push('/')
+    // Check if user is admin
+    try {
+      requireAdmin()
+    } catch {
       return
     }
     

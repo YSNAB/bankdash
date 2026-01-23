@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { requireAdmin } from '@/lib/auth'
 
 interface Supplier {
   id: number
@@ -39,9 +40,9 @@ export default function NewPurchasePage() {
   const [newSupplierName, setNewSupplierName] = useState('')
 
   useEffect(() => {
-    const userData = localStorage.getItem('user')
-    if (!userData) {
-      router.push('/')
+    try {
+      requireAdmin()
+    } catch {
       return
     }
     

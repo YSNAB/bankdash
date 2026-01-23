@@ -40,11 +40,15 @@ async function addUser() {
     const username = await question('Username: ')
     const name = await question('Full Name (optional): ')
     const password = await question('Password: ')
+    const roleInput = await question('Role (ADMIN/EMPLOYEE) [EMPLOYEE]: ')
 
     if (!username || !password) {
       console.error('\nError: Username and password are required!')
       process.exit(1)
     }
+
+    // Validate and set role
+    const role = roleInput.toUpperCase() === 'ADMIN' ? 'ADMIN' : 'EMPLOYEE'
 
     // Hash the password
     const saltRounds = 10
@@ -55,7 +59,8 @@ async function addUser() {
       data: {
         username,
         name: name || null,
-        password: hashedPassword
+        password: hashedPassword,
+        role: role
       }
     })
 
@@ -63,6 +68,7 @@ async function addUser() {
     console.log(`  ID: ${user.id}`)
     console.log(`  Username: ${user.username}`)
     console.log(`  Name: ${user.name || 'N/A'}`)
+    console.log(`  Role: ${user.role}`)
     console.log(`  Created: ${user.createdAt}\n`)
 
   } catch (error: any) {

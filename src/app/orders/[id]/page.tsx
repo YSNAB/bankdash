@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { formatPrice } from '@/lib/formatPrice'
-
+import { formatPrice } from '@/lib/formatPrice'import { requireAdmin } from '@/lib/auth'
 interface Customer {
   id: number
   name: string
@@ -63,9 +62,9 @@ export default function EditOrderPage() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const userData = localStorage.getItem('user')
-    if (!userData) {
-      router.push('/')
+    try {
+      requireAdmin()
+    } catch {
       return
     }
     

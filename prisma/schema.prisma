@@ -9,12 +9,19 @@ datasource db {
   provider = "postgresql"
 }
 
+// User roles enum
+enum UserRole {
+  ADMIN
+  EMPLOYEE
+}
+
 // User authentication model
 model User {
   id        String   @id @default(cuid())
   username  String   @unique
   password  String   // Store hashed password (use bcrypt)
   name      String?
+  role      UserRole @default(EMPLOYEE)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

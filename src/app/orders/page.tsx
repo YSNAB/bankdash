@@ -2,6 +2,7 @@
 
 import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { requireAdmin } from '@/lib/auth'
 import { formatPrice } from '@/lib/formatPrice'
 
 interface Customer {
@@ -44,10 +45,10 @@ function OrdersContent() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'paid'>('all')
 
   useEffect(() => {
-    // Check if user is logged in
-    const userData = localStorage.getItem('user')
-    if (!userData) {
-      router.push('/')
+    // Check if user is admin
+    try {
+      requireAdmin()
+    } catch {
       return
     }
     

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { requireAdmin } from '@/lib/auth'
 import { formatPrice } from '@/lib/formatPrice'
 
 interface Supplier {
@@ -36,10 +37,10 @@ export default function PurchasesPage() {
   const [deleting, setDeleting] = useState<number | null>(null)
 
   useEffect(() => {
-    // Check if user is logged in
-    const userData = localStorage.getItem('user')
-    if (!userData) {
-      router.push('/')
+    // Check if user is admin
+    try {
+      requireAdmin()
+    } catch {
       return
     }
     

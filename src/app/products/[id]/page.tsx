@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import { requireAdmin } from '@/lib/auth'
 
 interface Product {
   id: number
@@ -28,9 +29,9 @@ export default function EditProductPage() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const userData = localStorage.getItem('user')
-    if (!userData) {
-      router.push('/')
+    try {
+      requireAdmin()
+    } catch {
       return
     }
     

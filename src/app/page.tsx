@@ -39,8 +39,14 @@ export default function LoginPage() {
       // Store user data in localStorage
       localStorage.setItem('user', JSON.stringify(data.user))
       
-      // Redirect to dashboard
-      router.push('/dashboard')
+      // Redirect based on role
+      if (data.user.role === 'ADMIN') {
+        router.push('/dashboard')
+      } else if (data.user.role === 'EMPLOYEE') {
+        router.push('/pos')
+      } else {
+        router.push('/dashboard')
+      }
     } catch (err) {
       console.error('Login error:', err)
       setError('An error occurred. Please try again.')
