@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Phonebank Admin",
+  title: "DEV Phonebank Admin",
   description: "Phonebank Admin Dashboard",
 };
 
