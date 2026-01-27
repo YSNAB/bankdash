@@ -249,10 +249,66 @@ export default function POSPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left Column - Product Search */}
-          <div className="space-y-4">
+      <div className="max-w-full px-4 py-6">
+        <div className="flex gap-4">
+          {/* Left Sidebar - 25% */}
+          <div className="w-1/4 space-y-3">
+            {/* First Grid - 1x3 */}
+            <div className="grid grid-cols-3 gap-3">
+              <button className="px-4 py-3 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all font-semibold text-sm shadow-lg">
+                NEW EU
+              </button>
+              <button className="px-4 py-3 bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all font-semibold text-sm shadow-lg">
+                NEW NONEU
+              </button>
+              <button className="px-4 py-3 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl hover:from-purple-600 hover:to-purple-700 transition-all font-semibold text-sm shadow-lg">
+                USED
+              </button>
+            </div>
+
+            {/* Second Grid - 4x3 */}
+            <div className="grid grid-cols-3 gap-3">
+              <button className="px-4 py-3 bg-white border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition-all font-medium text-sm">
+                Item 1
+              </button>
+              <button className="px-4 py-3 bg-white border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition-all font-medium text-sm">
+                Item 2
+              </button>
+              <button className="px-4 py-3 bg-white border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition-all font-medium text-sm">
+                Item 3
+              </button>
+              <button className="px-4 py-3 bg-white border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition-all font-medium text-sm">
+                Item 4
+              </button>
+              <button className="px-4 py-3 bg-white border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition-all font-medium text-sm">
+                Item 5
+              </button>
+              <button className="px-4 py-3 bg-white border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition-all font-medium text-sm">
+                Item 6
+              </button>
+              <button className="px-4 py-3 bg-white border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition-all font-medium text-sm">
+                Item 7
+              </button>
+              <button className="px-4 py-3 bg-white border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition-all font-medium text-sm">
+                Item 8
+              </button>
+              <button className="px-4 py-3 bg-white border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition-all font-medium text-sm">
+                Item 9
+              </button>
+              <button className="px-4 py-3 bg-white border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition-all font-medium text-sm">
+                Item 10
+              </button>
+              <button className="px-4 py-3 bg-white border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition-all font-medium text-sm">
+                Item 11
+              </button>
+              <button className="px-4 py-3 bg-white border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition-all font-medium text-sm">
+                Item 12
+              </button>
+            </div>
+          </div>
+
+          {/* Middle Section - 50% - Product Search */}
+          <div className="w-1/2 space-y-4">
             <div className="backdrop-blur-xl bg-white/70 border border-white/20 shadow-xl rounded-2xl p-6">
               <h2 className="text-xl font-bold text-slate-900 mb-4">Search Products</h2>
               
@@ -273,7 +329,7 @@ export default function POSPage() {
                   >
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-slate-900 truncate">
-                        {product.displayName || product.name}
+                        {product.name}
                       </p>
                       {product.ean && (
                         <p className="text-xs text-slate-500">EAN: {product.ean}</p>
@@ -300,8 +356,8 @@ export default function POSPage() {
             </div>
           </div>
 
-          {/* Right Column - Cart & Checkout */}
-          <div className="space-y-4">
+          {/* Right Sidebar - 25% - Cart & Checkout */}
+          <div className="w-1/4 space-y-4">
             {/* Customer Selection */}
             <div className="backdrop-blur-xl bg-white/70 border border-white/20 shadow-xl rounded-2xl p-6">
               <h2 className="text-xl font-bold text-slate-900 mb-4">Customer</h2>
