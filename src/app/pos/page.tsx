@@ -22,6 +22,9 @@ interface Product {
 interface CartItem {
   productId: number
   productName: string
+  conditionRegion: string | null
+  storage: string | null
+  color: string | null
   quantity: number
   price: number
 }
@@ -58,6 +61,8 @@ export default function POSPage() {
   const [numpadInput, setNumpadInput] = useState('')
   const [inputMode, setInputMode] = useState<'quantity' | 'price'>('quantity')
   const [tempQuantity, setTempQuantity] = useState(1)
+  const [showExpandedCart, setShowExpandedCart] = useState(false)
+  const [editingCartItemId, setEditingCartItemId] = useState<number | null>(null)
 
   // Helper function to get background color based on product color
   const getColorClass = (color: string | null): string => {
@@ -309,6 +314,9 @@ export default function POSPage() {
       return [...prevCart, {
         productId: product.id,
         productName: product.name,
+        conditionRegion: product.conditionRegion,
+        storage: product.storage,
+        color: product.color,
         quantity,
         price
       }]
@@ -320,17 +328,29 @@ export default function POSPage() {
     if (value === 'C') {
       setNumpadInput('')
     } else if (value === 'ENTER') {
-      if (!numpadInput || !selectedProduct) return
+      if (!numpadInput) return
       
       const qty = parseInt(numpadInput)
-      const price = selectedProduct.sellingPrice || 0
       
-      if (qty > 0 && price > 0) {
-        addToCart(selectedProduct, qty, price)
-        setShowNumpad(false)
-        setSelectedProduct(null)
-        setNumpadInput('')
-        setTempQuantity(1)
+      if (editingCartItemId !== null) {
+        // Editing cart item quantity
+        if (qty > 0) {
+          updateQuantity(editingCartItemId, qty)
+          setShowNumpad(false)
+          setEditingCartItemId(null)
+          setNumpadInput('')
+        }
+      } else if (selectedProduct) {
+        // Adding new product
+        const price = selectedProduct.sellingPrice || 0
+        
+        if (qty > 0 && price > 0) {
+          addToCart(selectedProduct, qty, price)
+          setShowNumpad(false)
+          setSelectedProduct(null)
+          setNumpadInput('')
+          setTempQuantity(1)
+        }
       }
     } else {
       setNumpadInput(prev => prev + value)
@@ -341,9 +361,16 @@ export default function POSPage() {
     if (product.currentStock <= 0) return
     setSelectedProduct(product)
     setShowNumpad(true)
-    setInputMode('quantity')
+    setEditingCartItemId(null)
     setNumpadInput('')
     setTempQuantity(1)
+  }
+
+  const openNumpadForCartItem = (item: CartItem) => {
+    setEditingCartItemId(item.productId)
+    setShowNumpad(true)
+    setSelectedProduct(null)
+    setNumpadInput(item.quantity.toString())
   }
 
   const updateQuantity = (productId: number, newQuantity: number) => {
@@ -415,6 +442,7 @@ export default function POSPage() {
         setCart([])
         setSelectedCustomerId(null)
         setSearchQuery('')
+        setShowExpandedCart(false)
         
         // Clear success message after 3 seconds
         setTimeout(() => setSuccess(''), 3000)
@@ -737,7 +765,10 @@ export default function POSPage() {
             </div>
 
             {/* Cart */}
-            <div className="backdrop-blur-xl bg-white/70 border border-white/20 shadow-xl rounded-2xl p-6">
+            <div 
+              className="backdrop-blur-xl bg-white/70 border border-white/20 shadow-xl rounded-2xl p-6 cursor-pointer hover:bg-white/80 transition-all"
+              onClick={() => cart.length > 0 && setShowExpandedCart(true)}
+            >
               <h2 className="text-xl font-bold text-slate-900 mb-4">
                 Cart ({cart.length} items)
               </h2>
@@ -745,37 +776,22 @@ export default function POSPage() {
               {cart.length === 0 ? (
                 <p className="text-slate-500 text-center py-8">Cart is empty</p>
               ) : (
-                <div className="space-y-1">
-                  {cart.map(item => (
-                    <p key={item.productId} className="text-sm text-slate-900">
-                      {item.quantity}x {item.productName}
-                    </p>
-                  ))}
-                </div>
-              )}
-
-              {cart.length > 0 && (
                 <>
+                  <div className="space-y-1">
+                    {cart.map(item => (
+                      <p key={item.productId} className="text-sm text-slate-900">
+                        {item.quantity}x {item.productName}
+                      </p>
+                    ))}
+                  </div>
                   <div className="mt-4 pt-4 border-t border-slate-300">
-                    <div className="flex justify-between items-center mb-4">
+                    <div className="flex justify-between items-center">
                       <span className="text-sm font-bold text-slate-900">Total:</span>
                       <span className="text-base font-bold text-blue-600">
                         {formatPrice(calculateTotal())}
                       </span>
                     </div>
-
-                    {error && (
-                      <div className="mb-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-xl text-sm">
-                        {error}
-                      </div>
-                    )}
-
-                    {success && (
-                      <div className="mb-4 p-3 bg-green-100 border border-green-300 text-green-700 rounded-xl text-sm">
-                        {success}
-                      </div>
-                    )}
-
+                    <p className="text-xs text-slate-500 mt-2 text-center">Click to expand & checkout</p>
                   </div>
                 </>
               )}
@@ -783,23 +799,170 @@ export default function POSPage() {
           </div>
         </div>
 
-        {/* Numpad Modal */}
-        {showNumpad && selectedProduct && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-2xl p-8 shadow-2xl max-w-md w-full">
-              <div className="mb-6">
-                <h3 className="text-xl font-bold text-slate-900 mb-2">
-                  {selectedProduct.fullname || selectedProduct.name}
-                </h3>
-                <div className="flex justify-between items-center">
-                  <p className="text-sm text-slate-600">
-                    Stock: {selectedProduct.currentStock} units
-                  </p>
-                  <p className="text-lg font-bold text-blue-600">
-                    {formatPrice(selectedProduct.sellingPrice || 0)}
-                  </p>
+        {/* Expanded Cart Modal */}
+        {showExpandedCart && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-6">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col">
+              {/* Header */}
+              <div className="p-6 border-b border-slate-200 flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-slate-900">
+                  Cart ({cart.length} items)
+                </h2>
+                <button
+                  onClick={() => setShowExpandedCart(false)}
+                  className="text-slate-500 hover:text-slate-700 text-3xl font-bold leading-none"
+                >
+                  ×
+                </button>
+              </div>
+
+              {/* Cart Items - Main Focus */}
+              <div className="flex-1 overflow-y-auto p-6">
+                <div className="grid grid-cols-1 gap-3">
+                  {cart.map(item => (
+                    <div
+                      key={item.productId}
+                      className="bg-slate-50 rounded-xl p-4 flex items-center gap-4"
+                    >
+                      {/* Quantity Button */}
+                      <button
+                        onClick={() => openNumpadForCartItem(item)}
+                        className="px-5 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-bold text-lg min-w-[80px]"
+                      >
+                        {item.quantity}x
+                      </button>
+                      
+                      {/* Product Details - Main Focus */}
+                      <div className="flex-1">
+                        <h3 className="text-lg font-bold text-slate-900">
+                          {item.conditionRegion && <span className="text-blue-600">{item.conditionRegion}</span>}
+                          {item.conditionRegion && ' - '}
+                          {item.productName}
+                        </h3>
+                        <p className="text-sm text-slate-600">
+                          {item.storage && `${item.storage} • `}
+                          {item.color || 'No color specified'}
+                        </p>
+                      </div>
+
+                      {/* Price Info */}
+                      <div className="text-right">
+                        <p className="text-sm text-slate-600">
+                          {formatPrice(item.price)} each
+                        </p>
+                        <p className="text-xl font-bold text-slate-900">
+                          {formatPrice(item.price * item.quantity)}
+                        </p>
+                      </div>
+
+                      {/* Delete Button */}
+                      <button
+                        onClick={() => removeFromCart(item.productId)}
+                        className="px-4 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-bold"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </div>
+
+              {/* Footer - Payment Section (Small & Compact) */}
+              <div className="border-t border-slate-200 p-4 bg-slate-50">
+                <div className="max-w-4xl mx-auto">
+                  <div className="flex items-center justify-between gap-4">
+                    {/* Payment Type - Compact */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setPaymentType('cash')}
+                        className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+                          paymentType === 'cash'
+                            ? 'bg-green-500 text-white'
+                            : 'bg-white border-2 border-slate-300 text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        💵 Cash
+                      </button>
+                      <button
+                        onClick={() => setPaymentType('factuur')}
+                        className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+                          paymentType === 'factuur'
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-white border-2 border-slate-300 text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        📄 Invoice
+                      </button>
+                    </div>
+
+                    {/* Total */}
+                    <div className="flex items-center gap-6">
+                      <div className="text-right">
+                        <p className="text-xs text-slate-600">Total</p>
+                        <p className="text-2xl font-bold text-blue-600">
+                          {formatPrice(calculateTotal())}
+                        </p>
+                      </div>
+
+                      {/* Checkout Button */}
+                      <button
+                        onClick={handleCheckout}
+                        disabled={isSubmitting || cart.length === 0 || !selectedCustomerId}
+                        className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all font-bold text-base shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isSubmitting ? 'Processing...' : 'Complete Sale'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Error and Success Messages */}
+                  {error && (
+                    <div className="mt-3 p-2 bg-red-100 border border-red-300 text-red-700 rounded-lg text-sm">
+                      {error}
+                    </div>
+                  )}
+
+                  {success && (
+                    <div className="mt-3 p-2 bg-green-100 border border-green-300 text-green-700 rounded-lg text-sm">
+                      {success}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Numpad Modal */}
+        {showNumpad && (selectedProduct || editingCartItemId !== null) && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl p-8 shadow-2xl max-w-md w-full">
+              {selectedProduct && (
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold text-slate-900 mb-2">
+                    {selectedProduct.fullname || selectedProduct.name}
+                  </h3>
+                  <div className="flex justify-between items-center">
+                    <p className="text-sm text-slate-600">
+                      Stock: {selectedProduct.currentStock} units
+                    </p>
+                    <p className="text-lg font-bold text-blue-600">
+                      {formatPrice(selectedProduct.sellingPrice || 0)}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {editingCartItemId !== null && (
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold text-slate-900 mb-2">
+                    Edit Quantity
+                  </h3>
+                  <p className="text-sm text-slate-600">
+                    {cart.find(item => item.productId === editingCartItemId)?.productName}
+                  </p>
+                </div>
+              )}
 
               {/* Display */}
               <div className="mb-6 bg-slate-100 rounded-xl p-4">
@@ -838,7 +1001,7 @@ export default function POSPage() {
                   onClick={() => handleNumpadClick('ENTER')}
                   className="py-4 text-lg font-bold bg-green-500 hover:bg-green-600 text-white rounded-xl transition-all"
                 >
-                  Add
+                  {editingCartItemId !== null ? 'Update' : 'Add'}
                 </button>
               </div>
 
@@ -847,6 +1010,7 @@ export default function POSPage() {
                 onClick={() => {
                   setShowNumpad(false)
                   setSelectedProduct(null)
+                  setEditingCartItemId(null)
                   setNumpadInput('')
                   setTempQuantity(1)
                 }}
