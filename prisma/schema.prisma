@@ -59,10 +59,12 @@ model Supplier {
 
 // Customers model
 model Customer {
-  id     Int     @id @default(autoincrement())
-  name   String
-  region String  @default("NL") // NL, EU, or Non-EU
-  orders Order[] @relation("CustomerToOrder")
+  id          Int     @id @default(autoincrement())
+  name        String
+  companyName String? @map("company_name")
+  location    String? // City
+  region      String  @default("NL") // NL, EU, or Non-EU
+  orders      Order[] @relation("CustomerToOrder")
 
   @@map("customers")
 }

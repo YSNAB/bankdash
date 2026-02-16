@@ -32,6 +32,8 @@ interface CartItem {
 interface Customer {
   id: number
   name: string
+  companyName: string | null
+  location: string | null
   region: string
 }
 
@@ -67,6 +69,13 @@ export default function POSPage() {
   const [showDiscountInput, setShowDiscountInput] = useState(false)
   const [paidAmount, setPaidAmount] = useState(0)
   const [showPaidAmountInput, setShowPaidAmountInput] = useState(false)
+  const [showCustomerModal, setShowCustomerModal] = useState(false)
+  const [showCustomerSelectionModal, setShowCustomerSelectionModal] = useState(false)
+  const [newCustomerName, setNewCustomerName] = useState('')
+  const [newCustomerCompanyName, setNewCustomerCompanyName] = useState('')
+  const [newCustomerLocation, setNewCustomerLocation] = useState('')
+  const [newCustomerRegion, setNewCustomerRegion] = useState<'NL' | 'EU' | 'Non-EU'>('NL')
+  const [customerSearchQuery, setCustomerSearchQuery] = useState('')
 
   // Helper function to get background color based on product color
   const getColorClass = (color: string | null): string => {
@@ -302,6 +311,49 @@ export default function POSPage() {
       }
     } catch (error) {
       console.error('Error fetching customers:', error)
+    }
+  }
+
+  const handleCreateCustomer = async () => {
+    if (!newCustomerName.trim()) {
+      setError('Customer name is required')
+      return
+    }
+
+    try {
+      const response = await fetch('/api/customers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: newCustomerName.trim(),
+          companyName: newCustomerCompanyName.trim() || null,
+          location: newCustomerLocation.trim() || null,
+          region: newCustomerRegion,
+        }),
+      })
+
+      if (response.ok) {
+        const newCustomer = await response.json()
+        setCustomers(prev => [...prev, newCustomer])
+        setSelectedCustomerId(newCustomer.id)
+        setCustomerSearchQuery('')
+        setNewCustomerName('')
+        setNewCustomerCompanyName('')
+        setNewCustomerLocation('')
+        setNewCustomerRegion('NL')
+        setShowCustomerModal(false)
+        setShowCustomerSelectionModal(false)
+        setSuccess('Customer created successfully!')
+        setTimeout(() => setSuccess(''), 3000)
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error || 'Failed to create customer')
+      }
+    } catch (error) {
+      console.error('Error creating customer:', error)
+      setError('Failed to create customer')
     }
   }
 
@@ -813,22 +865,34 @@ export default function POSPage() {
 
           {/* Right Sidebar - 25% - Cart & Checkout */}
           <div className="w-1/4 space-y-4">
-            {/* Customer Selection */}
-            <div className="backdrop-blur-xl bg-white/70 border border-white/20 shadow-xl rounded-2xl p-6">
-              <h2 className="text-xl font-bold text-slate-900 mb-4">Customer</h2>
-              <select
-                value={selectedCustomerId || ''}
-                onChange={(e) => setSelectedCustomerId(Number(e.target.value))}
-                className="w-full px-4 py-3 bg-white border-2 border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900"
-              >
-                <option value="">Select customer...</option>
-                {customers.map(customer => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.name} ({customer.region})
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* Customer Selection Button */}
+            <button
+              onClick={() => setShowCustomerSelectionModal(true)}
+              className="w-full backdrop-blur-xl bg-white/70 border border-white/20 shadow-xl rounded-2xl p-6 hover:bg-white/80 transition-all text-left"
+            >
+              <h2 className="text-xl font-bold text-slate-900 mb-2">Customer</h2>
+              <div className="text-lg text-slate-700">
+                {selectedCustomerId ? (
+                  <>
+                    <div className="font-semibold">
+                      {customers.find(c => c.id === selectedCustomerId)?.name}
+                    </div>
+                    {customers.find(c => c.id === selectedCustomerId)?.companyName && (
+                      <div className="text-sm text-slate-600">
+                        {customers.find(c => c.id === selectedCustomerId)?.companyName}
+                      </div>
+                    )}
+                    {customers.find(c => c.id === selectedCustomerId)?.location && (
+                      <div className="text-xs text-slate-500">
+                        {customers.find(c => c.id === selectedCustomerId)?.location}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <span className="text-slate-500 italic">Select customer...</span>
+                )}
+              </div>
+            </button>
 
             {/* Cart */}
             <div 
@@ -1235,6 +1299,281 @@ export default function POSPage() {
               >
                 Cancel
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Customer Selection Modal */}
+        {showCustomerSelectionModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full h-[95vh] max-w-7xl flex flex-col">
+              {/* Header */}
+              <div className="p-6 border-b border-slate-200 flex justify-between items-center">
+                <h2 className="text-3xl font-bold text-slate-900">Select Customer</h2>
+                <button
+                  onClick={() => {
+                    setShowCustomerSelectionModal(false)
+                    setCustomerSearchQuery('')
+                  }}
+                  className="text-slate-500 hover:text-slate-700 text-4xl font-bold leading-none"
+                >
+                  ×
+                </button>
+              </div>
+
+              {/* Search Bar */}
+              <div className="p-6 border-b border-slate-200">
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      value={customerSearchQuery}
+                      onChange={(e) => setCustomerSearchQuery(e.target.value)}
+                      placeholder="Search customers (type at least 3 characters)..."
+                      className="w-full px-6 py-4 bg-white border-2 border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 text-lg"
+                      autoFocus
+                    />
+                  </div>
+                  <button
+                    onClick={() => setShowCustomerModal(true)}
+                    className="px-6 py-4 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold text-lg transition-all whitespace-nowrap"
+                  >
+                    + Add New Customer
+                  </button>
+                </div>
+              </div>
+
+              {/* Customer List */}
+              <div className="flex-1 overflow-y-auto p-6">
+                {customerSearchQuery.length < 3 ? (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center text-slate-500">
+                      <p className="text-xl mb-2">Type at least 3 characters to search</p>
+                      <p className="text-sm">or</p>
+                      <button
+                        onClick={() => setCustomerSearchQuery('   ')}
+                        className="mt-4 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-medium transition-all"
+                      >
+                        Show All Customers
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {customers
+                      .filter(customer => {
+                        const searchLower = customerSearchQuery.toLowerCase()
+                        return (
+                          customer.name.toLowerCase().includes(searchLower) ||
+                          customer.companyName?.toLowerCase().includes(searchLower) ||
+                          customer.location?.toLowerCase().includes(searchLower) ||
+                          customer.region.toLowerCase().includes(searchLower)
+                        )
+                      })
+                      .map(customer => (
+                        <button
+                          key={customer.id}
+                          onClick={() => {
+                            setSelectedCustomerId(customer.id)
+                            setShowCustomerSelectionModal(false)
+                            setCustomerSearchQuery('')
+                          }}
+                          className={`p-6 rounded-xl border-2 transition-all text-left ${
+                            selectedCustomerId === customer.id
+                              ? 'border-blue-500 bg-blue-50'
+                              : 'border-slate-300 bg-white hover:border-blue-400 hover:bg-slate-50'
+                          }`}
+                        >
+                          <div className="font-bold text-lg text-slate-900 mb-2">
+                            {customer.name}
+                          </div>
+                          
+                          {customer.companyName && (
+                            <div className="text-sm text-slate-700 mb-1">
+                              🏢 {customer.companyName}
+                            </div>
+                          )}
+                          
+                          <div className="flex items-center gap-4 text-sm text-slate-600 mt-2">
+                            {customer.location && (
+                              <div>📍 {customer.location}</div>
+                            )}
+                            <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                              customer.region === 'NL'
+                                ? 'bg-blue-100 text-blue-700'
+                                : customer.region === 'EU'
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-purple-100 text-purple-700'
+                            }`}>
+                              {customer.region}
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    
+                    {customers.filter(customer => {
+                      const searchLower = customerSearchQuery.toLowerCase()
+                      return (
+                        customer.name.toLowerCase().includes(searchLower) ||
+                        customer.companyName?.toLowerCase().includes(searchLower) ||
+                        customer.location?.toLowerCase().includes(searchLower) ||
+                        customer.region.toLowerCase().includes(searchLower)
+                      )
+                    }).length === 0 && (
+                      <div className="col-span-full text-center py-12">
+                        <p className="text-xl text-slate-500 mb-4">No customers found</p>
+                        <button
+                          onClick={() => setShowCustomerModal(true)}
+                          className="px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold transition-all"
+                        >
+                          + Add New Customer
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Customer Creation Modal */}
+        {showCustomerModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-6">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-8">
+              {/* Header */}
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-slate-900">Add New Customer</h2>
+                <button
+                  onClick={() => {
+                    setShowCustomerModal(false)
+                    setNewCustomerName('')
+                    setNewCustomerCompanyName('')
+                    setNewCustomerLocation('')
+                    setNewCustomerRegion('NL')
+                    setError('')
+                  }}
+                  className="text-slate-500 hover:text-slate-700 text-3xl font-bold leading-none"
+                >
+                  ×
+                </button>
+              </div>
+
+              {/* Form */}
+              <div className="space-y-4">
+                {/* Customer Name */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Customer Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={newCustomerName}
+                    onChange={(e) => setNewCustomerName(e.target.value)}
+                    placeholder="Enter customer name"
+                    className="w-full px-4 py-3 bg-white border-2 border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900"
+                    autoFocus
+                  />
+                </div>
+
+                {/* Company Name */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Company Name
+                  </label>
+                  <input
+                    type="text"
+                    value={newCustomerCompanyName}
+                    onChange={(e) => setNewCustomerCompanyName(e.target.value)}
+                    placeholder="Enter company name (optional)"
+                    className="w-full px-4 py-3 bg-white border-2 border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900"
+                  />
+                </div>
+
+                {/* Location (City) */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Location (City)
+                  </label>
+                  <input
+                    type="text"
+                    value={newCustomerLocation}
+                    onChange={(e) => setNewCustomerLocation(e.target.value)}
+                    placeholder="Enter city (optional)"
+                    className="w-full px-4 py-3 bg-white border-2 border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900"
+                  />
+                </div>
+
+                {/* Region Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Region *
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      onClick={() => setNewCustomerRegion('NL')}
+                      className={`px-4 py-3 rounded-xl font-medium transition-all ${
+                        newCustomerRegion === 'NL'
+                          ? 'bg-blue-500 text-white'
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      }`}
+                    >
+                      NL
+                    </button>
+                    <button
+                      onClick={() => setNewCustomerRegion('EU')}
+                      className={`px-4 py-3 rounded-xl font-medium transition-all ${
+                        newCustomerRegion === 'EU'
+                          ? 'bg-blue-500 text-white'
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      }`}
+                    >
+                      EU
+                    </button>
+                    <button
+                      onClick={() => setNewCustomerRegion('Non-EU')}
+                      className={`px-4 py-3 rounded-xl font-medium transition-all ${
+                        newCustomerRegion === 'Non-EU'
+                          ? 'bg-blue-500 text-white'
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      }`}
+                    >
+                      Non-EU
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Error Message */}
+              {error && (
+                <div className="mt-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-lg text-sm">
+                  {error}
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => {
+                    setShowCustomerModal(false)
+                    setNewCustomerName('')
+                    setNewCustomerCompanyName('')
+                    setNewCustomerLocation('')
+                    setNewCustomerRegion('NL')
+                    setError('')
+                  }}
+                  className="flex-1 px-6 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl font-medium transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateCustomer}
+                  disabled={!newCustomerName.trim()}
+                  className="flex-1 px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Create Customer
+                </button>
+              </div>
             </div>
           </div>
         )}
