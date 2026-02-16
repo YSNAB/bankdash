@@ -63,6 +63,10 @@ export default function POSPage() {
   const [tempQuantity, setTempQuantity] = useState(1)
   const [showExpandedCart, setShowExpandedCart] = useState(false)
   const [editingCartItemId, setEditingCartItemId] = useState<number | null>(null)
+  const [discount, setDiscount] = useState(0)
+  const [showDiscountInput, setShowDiscountInput] = useState(false)
+  const [paidAmount, setPaidAmount] = useState(0)
+  const [showPaidAmountInput, setShowPaidAmountInput] = useState(false)
 
   // Helper function to get background color based on product color
   const getColorClass = (color: string | null): string => {
@@ -332,7 +336,25 @@ export default function POSPage() {
       
       const qty = parseInt(numpadInput)
       
-      if (editingCartItemId !== null) {
+      if (showPaidAmountInput) {
+        // Setting paid amount
+        const paidValue = parseFloat(numpadInput)
+        if (paidValue >= 0) {
+          setPaidAmount(paidValue)
+          setShowNumpad(false)
+          setShowPaidAmountInput(false)
+          setNumpadInput('')
+        }
+      } else if (showDiscountInput) {
+        // Setting discount
+        const discountValue = parseFloat(numpadInput)
+        if (discountValue >= 0) {
+          setDiscount(discountValue)
+          setShowNumpad(false)
+          setShowDiscountInput(false)
+          setNumpadInput('')
+        }
+      } else if (editingCartItemId !== null) {
         // Editing cart item quantity
         if (qty > 0) {
           updateQuantity(editingCartItemId, qty)
@@ -352,6 +374,10 @@ export default function POSPage() {
           setTempQuantity(1)
         }
       }
+    } else if (value === '.') {
+      if ((showDiscountInput || showPaidAmountInput) && !numpadInput.includes('.')) {
+        setNumpadInput(prev => prev + value)
+      }
     } else {
       setNumpadInput(prev => prev + value)
     }
@@ -370,7 +396,26 @@ export default function POSPage() {
     setEditingCartItemId(item.productId)
     setShowNumpad(true)
     setSelectedProduct(null)
+    setShowDiscountInput(false)
     setNumpadInput(item.quantity.toString())
+  }
+
+  const openDiscountInput = () => {
+    setShowDiscountInput(true)
+    setShowNumpad(true)
+    setSelectedProduct(null)
+    setEditingCartItemId(null)
+    setShowPaidAmountInput(false)
+    setNumpadInput(discount > 0 ? discount.toString() : '')
+  }
+
+  const openPaidAmountInput = () => {
+    setShowPaidAmountInput(true)
+    setShowNumpad(true)
+    setSelectedProduct(null)
+    setEditingCartItemId(null)
+    setShowDiscountInput(false)
+    setNumpadInput(paidAmount > 0 ? paidAmount.toString() : calculateFinalTotal().toString())
   }
 
   const updateQuantity = (productId: number, newQuantity: number) => {
@@ -401,6 +446,25 @@ export default function POSPage() {
     return cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
   }
 
+  const calculateSubtotal = () => {
+    return calculateTotal()
+  }
+
+  const calculateDiscountedTotal = () => {
+    return Math.max(0, calculateSubtotal() - discount)
+  }
+
+  const calculateTax = () => {
+    if (paymentType === 'factuur') {
+      return calculateDiscountedTotal() * 0.21
+    }
+    return 0
+  }
+
+  const calculateFinalTotal = () => {
+    return calculateDiscountedTotal() + calculateTax()
+  }
+
   const handleCheckout = async () => {
     if (cart.length === 0) {
       setError('Cart is empty')
@@ -420,7 +484,7 @@ export default function POSPage() {
         customerId: selectedCustomerId,
         date: new Date().toISOString(),
         paymentType,
-        paidAmount: paymentType === 'cash' ? calculateTotal() : 0,
+        paidAmount: paidAmount > 0 ? paidAmount : (paymentType === 'cash' ? calculateFinalTotal() : 0),
         items: cart.map(item => ({
           productId: item.productId,
           quantity: item.quantity,
@@ -443,6 +507,8 @@ export default function POSPage() {
         setSelectedCustomerId(null)
         setSearchQuery('')
         setShowExpandedCart(false)
+        setDiscount(0)
+        setPaidAmount(0)
         
         // Clear success message after 3 seconds
         setTimeout(() => setSuccess(''), 3000)
@@ -785,11 +851,57 @@ export default function POSPage() {
                     ))}
                   </div>
                   <div className="mt-4 pt-4 border-t border-slate-300">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-bold text-slate-900">Total:</span>
-                      <span className="text-base font-bold text-blue-600">
-                        {formatPrice(calculateTotal())}
-                      </span>
+                    <div className="space-y-1 text-xs">
+                      <div className="flex justify-between items-center text-slate-600">
+                        <span>Subtotal:</span>
+                        <span>{formatPrice(calculateSubtotal())}</span>
+                      </div>
+                      
+                      {discount > 0 && (
+                        <div className="flex justify-between items-center text-red-600">
+                          <span>Discount:</span>
+                          <span>-{formatPrice(discount)}</span>
+                        </div>
+                      )}
+                      
+                      {paymentType === 'factuur' && (
+                        <>
+                          <div className="flex justify-between items-center text-slate-600">
+                            <span>VAT (21%):</span>
+                            <span>{formatPrice(calculateTax())}</span>
+                          </div>
+                        </>
+                      )}
+                      
+                      <div className="flex justify-between items-center pt-1 border-t border-slate-200">
+                        <span className="font-bold text-slate-900">Total:</span>
+                        <span className="font-bold text-blue-600">
+                          {formatPrice(calculateFinalTotal())}
+                        </span>
+                      </div>
+                      
+                      {paidAmount > 0 && (
+                        <>
+                          <div className="flex justify-between items-center text-green-600 font-semibold">
+                            <span>Paid:</span>
+                            <span>{formatPrice(paidAmount)}</span>
+                          </div>
+                          
+                          {paidAmount < calculateFinalTotal() && (
+                            <div className="flex justify-between items-center text-red-600 font-semibold">
+                              <span>Remaining:</span>
+                              <span>{formatPrice(calculateFinalTotal() - paidAmount)}</span>
+                            </div>
+                          )}
+                          
+                          {paidAmount > calculateFinalTotal() && (
+                            <div className="flex justify-between items-center text-green-600 font-semibold">
+                              <span>Change:</span>
+                              <span>{formatPrice(paidAmount - calculateFinalTotal())}</span>
+                            </div>
+                          )}
+                        </>
+                      )}
                     </div>
                     <p className="text-xs text-slate-500 mt-2 text-center">Click to expand & checkout</p>
                   </div>
@@ -897,11 +1009,79 @@ export default function POSPage() {
 
                     {/* Total */}
                     <div className="flex items-center gap-6">
-                      <div className="text-right">
-                        <p className="text-xs text-slate-600">Total</p>
-                        <p className="text-2xl font-bold text-blue-600">
-                          {formatPrice(calculateTotal())}
-                        </p>
+                      <div className="text-right space-y-1">
+                        {/* Subtotal */}
+                        <div className="flex justify-between gap-4 text-xs text-slate-600">
+                          <span>Subtotal:</span>
+                          <span>{formatPrice(calculateSubtotal())}</span>
+                        </div>
+                        
+                        {/* Discount - clickable */}
+                        {discount > 0 && (
+                          <div className="flex justify-between gap-4 text-xs text-red-600">
+                            <span>Discount:</span>
+                            <button 
+                              onClick={openDiscountInput}
+                              className="hover:underline font-medium"
+                            >
+                              -{formatPrice(discount)}
+                            </button>
+                          </div>
+                        )}
+                        
+                        {/* Tax for Invoice */}
+                        {paymentType === 'factuur' && (
+                          <>
+                            <div className="flex justify-between gap-4 text-xs text-slate-600">
+                              <span>Excl. VAT:</span>
+                              <span>{formatPrice(calculateDiscountedTotal())}</span>
+                            </div>
+                            <div className="flex justify-between gap-4 text-xs text-slate-600">
+                              <span>VAT (21%):</span>
+                              <span>{formatPrice(calculateTax())}</span>
+                            </div>
+                          </>
+                        )}
+                        
+                        {/* Final Total - clickable to add discount */}
+                        <div className="flex justify-between gap-4 border-t border-slate-300 pt-1">
+                          <span className="text-xs text-slate-600">Total:</span>
+                          <button
+                            onClick={openDiscountInput}
+                            className="text-2xl font-bold text-blue-600 hover:text-blue-700 transition-colors"
+                            title="Click to add discount"
+                          >
+                            {formatPrice(calculateFinalTotal())}
+                          </button>
+                        </div>
+                        
+                        {/* Paid Amount - clickable to set */}
+                        <div className="flex justify-between gap-4 border-t border-slate-300 pt-1 mt-1">
+                          <span className="text-xs text-slate-600">Paid:</span>
+                          <button
+                            onClick={openPaidAmountInput}
+                            className="text-lg font-bold text-green-600 hover:text-green-700 transition-colors"
+                            title="Click to set paid amount"
+                          >
+                            {formatPrice(paidAmount)}
+                          </button>
+                        </div>
+                        
+                        {/* Remaining Balance */}
+                        {paidAmount > 0 && paidAmount < calculateFinalTotal() && (
+                          <div className="flex justify-between gap-4 text-xs text-red-600 font-semibold">
+                            <span>Remaining:</span>
+                            <span>{formatPrice(calculateFinalTotal() - paidAmount)}</span>
+                          </div>
+                        )}
+                        
+                        {/* Change */}
+                        {paidAmount > calculateFinalTotal() && (
+                          <div className="flex justify-between gap-4 text-xs text-green-600 font-semibold">
+                            <span>Change:</span>
+                            <span>{formatPrice(paidAmount - calculateFinalTotal())}</span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Checkout Button */}
@@ -934,7 +1114,7 @@ export default function POSPage() {
         )}
 
         {/* Numpad Modal */}
-        {showNumpad && (selectedProduct || editingCartItemId !== null) && (
+        {showNumpad && (selectedProduct || editingCartItemId !== null || showDiscountInput || showPaidAmountInput) && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white rounded-2xl p-8 shadow-2xl max-w-md w-full">
               {selectedProduct && (
@@ -964,12 +1144,35 @@ export default function POSPage() {
                 </div>
               )}
 
+              {showDiscountInput && (
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold text-slate-900 mb-2">
+                    Enter Discount
+                  </h3>
+                  <p className="text-sm text-slate-600">
+                    Current subtotal: {formatPrice(calculateSubtotal())}
+                  </p>
+                </div>
+              )}
+              
+              {showPaidAmountInput && (
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold text-slate-900 mb-2">
+                    Enter Paid Amount
+                  </h3>
+                  <p className="text-sm text-slate-600">
+                    Total to pay: {formatPrice(calculateFinalTotal())}
+                  </p>
+                </div>
+              )}
+
               {/* Display */}
               <div className="mb-6 bg-slate-100 rounded-xl p-4">
                 <div className="text-sm text-slate-600 mb-1">
-                  Enter Quantity:
+                  {showPaidAmountInput ? 'Paid Amount (€):' : showDiscountInput ? 'Discount Amount (€):' : 'Enter Quantity:'}
                 </div>
                 <div className="text-3xl font-bold text-slate-900 h-12 flex items-center">
+                  {(showDiscountInput || showPaidAmountInput) && '€ '}
                   {numpadInput || '0'}
                 </div>
               </div>
@@ -998,12 +1201,25 @@ export default function POSPage() {
                   0
                 </button>
                 <button
-                  onClick={() => handleNumpadClick('ENTER')}
-                  className="py-4 text-lg font-bold bg-green-500 hover:bg-green-600 text-white rounded-xl transition-all"
+                  onClick={() => (showDiscountInput || showPaidAmountInput) && handleNumpadClick('.')}
+                  disabled={!showDiscountInput && !showPaidAmountInput}
+                  className={`py-4 text-2xl font-bold rounded-xl transition-all ${
+                    showDiscountInput || showPaidAmountInput
+                      ? 'bg-slate-100 hover:bg-slate-200 cursor-pointer' 
+                      : 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-50'
+                  }`}
                 >
-                  {editingCartItemId !== null ? 'Update' : 'Add'}
+                  .
                 </button>
               </div>
+
+              {/* Enter button */}
+              <button
+                onClick={() => handleNumpadClick('ENTER')}
+                className="w-full py-4 text-lg font-bold bg-green-500 hover:bg-green-600 text-white rounded-xl transition-all mb-3"
+              >
+                {showPaidAmountInput ? 'Set Paid Amount' : showDiscountInput ? 'Apply Discount' : editingCartItemId !== null ? 'Update' : 'Add'}
+              </button>
 
               {/* Cancel button */}
               <button
@@ -1011,6 +1227,7 @@ export default function POSPage() {
                   setShowNumpad(false)
                   setSelectedProduct(null)
                   setEditingCartItemId(null)
+                  setShowDiscountInput(false)
                   setNumpadInput('')
                   setTempQuantity(1)
                 }}
