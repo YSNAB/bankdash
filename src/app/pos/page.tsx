@@ -52,6 +52,11 @@ export default function POSPage() {
   const [availableBrands, setAvailableBrands] = useState<string[]>([])
   const [availableModels, setAvailableModels] = useState<string[]>([])
   const [availableStorage, setAvailableStorage] = useState<string[]>([])
+  const [showNumpad, setShowNumpad] = useState(false)
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [numpadInput, setNumpadInput] = useState('')
+  const [inputMode, setInputMode] = useState<'quantity' | 'price'>('quantity')
+  const [tempQuantity, setTempQuantity] = useState(1)
 
   // Helper function to get background color based on product color
   const getColorClass = (color: string | null): string => {
@@ -290,24 +295,64 @@ export default function POSPage() {
     }
   }
 
-  const addToCart = (product: Product, price: number) => {
+  const addToCart = (product: Product, quantity: number, price: number) => {
     setCart(prevCart => {
       const existingItem = prevCart.find(item => item.productId === product.id)
       if (existingItem) {
         return prevCart.map(item =>
           item.productId === product.id
-            ? { ...item, quantity: item.quantity + 1 }
+            ? { ...item, quantity: item.quantity + quantity }
             : item
         )
       }
       return [...prevCart, {
         productId: product.id,
-        productName: product.fullname || product.name,
-        quantity: 1,
+        productName: product.name,
+        quantity,
         price
       }]
     })
     setSearchQuery('') // Clear search after adding
+  }
+
+  const handleNumpadClick = (value: string) => {
+    if (value === 'C') {
+      setNumpadInput('')
+    } else if (value === 'ENTER') {
+      if (!numpadInput) return
+      
+      if (inputMode === 'quantity') {
+        // Move to price input
+        const qty = parseInt(numpadInput)
+        if (qty > 0) {
+          setTempQuantity(qty)
+          setInputMode('price')
+          setNumpadInput('')
+        }
+      } else {
+        // Add to cart
+        const price = parseFloat(numpadInput)
+        if (price > 0 && selectedProduct) {
+          addToCart(selectedProduct, tempQuantity, price)
+          setShowNumpad(false)
+          setSelectedProduct(null)
+          setNumpadInput('')
+          setInputMode('quantity')
+          setTempQuantity(1)
+        }
+      }
+    } else {
+      setNumpadInput(prev => prev + value)
+    }
+  }
+
+  const openNumpadForProduct = (product: Product) => {
+    if (product.currentStock <= 0) return
+    setSelectedProduct(product)
+    setShowNumpad(true)
+    setInputMode('quantity')
+    setNumpadInput('')
+    setTempQuantity(1)
   }
 
   const updateQuantity = (productId: number, newQuantity: number) => {
@@ -647,12 +692,7 @@ export default function POSPage() {
                       className={`${getColorClass(product.color)} ${getTextColorClass(product.color)} rounded-lg p-3 shadow-md hover:shadow-lg transition-all cursor-pointer ${
                         product.currentStock <= 0 ? 'opacity-50 cursor-not-allowed' : ''
                       }`}
-                      onClick={() => {
-                        if (product.currentStock > 0) {
-                          const price = parseFloat(prompt('Enter selling price:') || '0')
-                          if (price > 0) addToCart(product, price)
-                        }
-                      }}
+                      onClick={() => openNumpadForProduct(product)}
                     >
                       {/* Row 1: Name | Stock */}
                       <div className="flex items-start justify-between gap-2 mb-2">
@@ -714,47 +754,11 @@ export default function POSPage() {
               {cart.length === 0 ? (
                 <p className="text-slate-500 text-center py-8">Cart is empty</p>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-1">
                   {cart.map(item => (
-                    <div
-                      key={item.productId}
-                      className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-200"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-slate-900 truncate text-sm">
-                          {item.productName}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <input
-                            type="number"
-                            min="1"
-                            value={item.quantity}
-                            onChange={(e) => updateQuantity(item.productId, parseInt(e.target.value))}
-                            className="w-16 px-2 py-1 text-sm border border-slate-300 rounded"
-                          />
-                          <span className="text-sm text-slate-600">×</span>
-                          <input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={item.price}
-                            onChange={(e) => updatePrice(item.productId, parseFloat(e.target.value))}
-                            className="w-24 px-2 py-1 text-sm border border-slate-300 rounded"
-                          />
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-slate-900">
-                          {formatPrice(item.price * item.quantity)}
-                        </p>
-                        <button
-                          onClick={() => removeFromCart(item.productId)}
-                          className="text-xs text-red-600 hover:text-red-700 mt-1"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </div>
+                    <p key={item.productId} className="text-sm text-slate-900">
+                      {item.quantity}x {item.productName}
+                    </p>
                   ))}
                 </div>
               )}
@@ -763,38 +767,10 @@ export default function POSPage() {
                 <>
                   <div className="mt-4 pt-4 border-t border-slate-300">
                     <div className="flex justify-between items-center mb-4">
-                      <span className="text-xl font-bold text-slate-900">Total:</span>
-                      <span className="text-2xl font-bold text-blue-600">
+                      <span className="text-sm font-bold text-slate-900">Total:</span>
+                      <span className="text-base font-bold text-blue-600">
                         {formatPrice(calculateTotal())}
                       </span>
-                    </div>
-
-                    <div className="mb-4">
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">
-                        Payment Type
-                      </label>
-                      <div className="grid grid-cols-2 gap-3">
-                        <button
-                          onClick={() => setPaymentType('cash')}
-                          className={`px-4 py-3 rounded-xl font-medium transition-all ${
-                            paymentType === 'cash'
-                              ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg'
-                              : 'bg-white border-2 border-slate-300 text-slate-700 hover:bg-slate-50'
-                          }`}
-                        >
-                          💵 Cash
-                        </button>
-                        <button
-                          onClick={() => setPaymentType('factuur')}
-                          className={`px-4 py-3 rounded-xl font-medium transition-all ${
-                            paymentType === 'factuur'
-                              ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg'
-                              : 'bg-white border-2 border-slate-300 text-slate-700 hover:bg-slate-50'
-                          }`}
-                        >
-                          📄 Invoice
-                        </button>
-                      </div>
                     </div>
 
                     {error && (
@@ -809,19 +785,111 @@ export default function POSPage() {
                       </div>
                     )}
 
-                    <button
-                      onClick={handleCheckout}
-                      disabled={isSubmitting || cart.length === 0 || !selectedCustomerId}
-                      className="w-full px-6 py-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all font-bold text-lg shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isSubmitting ? 'Processing...' : 'Complete Sale'}
-                    </button>
                   </div>
                 </>
               )}
             </div>
           </div>
         </div>
+
+        {/* Numpad Modal */}
+        {showNumpad && selectedProduct && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl p-8 shadow-2xl max-w-md w-full">
+              <div className="mb-6">
+                <h3 className="text-xl font-bold text-slate-900 mb-2">
+                  {selectedProduct.fullname || selectedProduct.name}
+                </h3>
+                <p className="text-sm text-slate-600">
+                  Stock: {selectedProduct.currentStock} units
+                </p>
+              </div>
+
+              {/* Display */}
+              <div className="mb-6 bg-slate-100 rounded-xl p-4">
+                <div className="text-sm text-slate-600 mb-1">
+                  {inputMode === 'quantity' ? 'Enter Quantity:' : 'Enter Price:'}
+                </div>
+                <div className="text-3xl font-bold text-slate-900 h-12 flex items-center">
+                  {numpadInput || '0'}
+                  {inputMode === 'price' && numpadInput && (
+                    <span className="text-2xl text-slate-600 ml-2">€</span>
+                  )}
+                </div>
+                {inputMode === 'price' && tempQuantity > 0 && (
+                  <div className="text-sm text-slate-600 mt-2">
+                    Quantity: {tempQuantity}
+                  </div>
+                )}
+              </div>
+
+              {/* Numpad */}
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map(num => (
+                  <button
+                    key={num}
+                    onClick={() => handleNumpadClick(num)}
+                    className="py-4 text-2xl font-bold bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
+                  >
+                    {num}
+                  </button>
+                ))}
+                <button
+                  onClick={() => handleNumpadClick('C')}
+                  className="py-4 text-xl font-bold bg-red-500 hover:bg-red-600 text-white rounded-xl transition-all"
+                >
+                  Clear
+                </button>
+                <button
+                  onClick={() => handleNumpadClick('0')}
+                  className="py-4 text-2xl font-bold bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
+                >
+                  0
+                </button>
+                {inputMode === 'price' && (
+                  <button
+                    onClick={() => handleNumpadClick('.')}
+                    className="py-4 text-2xl font-bold bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
+                  >
+                    .
+                  </button>
+                )}
+                {inputMode === 'quantity' && (
+                  <button
+                    onClick={() => handleNumpadClick('ENTER')}
+                    className="py-4 text-lg font-bold bg-green-500 hover:bg-green-600 text-white rounded-xl transition-all"
+                  >
+                    Next
+                  </button>
+                )}
+              </div>
+
+              {/* Enter button for price mode */}
+              {inputMode === 'price' && (
+                <button
+                  onClick={() => handleNumpadClick('ENTER')}
+                  className="w-full py-4 text-lg font-bold bg-green-500 hover:bg-green-600 text-white rounded-xl transition-all mb-3"
+                >
+                  Add to Cart
+                </button>
+              )}
+
+              {/* Cancel button */}
+              <button
+                onClick={() => {
+                  setShowNumpad(false)
+                  setSelectedProduct(null)
+                  setNumpadInput('')
+                  setInputMode('quantity')
+                  setTempQuantity(1)
+                }}
+                className="w-full py-3 text-sm font-medium bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl transition-all"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
