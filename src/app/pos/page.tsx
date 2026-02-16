@@ -16,6 +16,7 @@ interface Product {
   model: string | null
   storage: string | null
   color: string | null
+  sellingPrice: number | null
 }
 
 interface CartItem {
@@ -319,27 +320,17 @@ export default function POSPage() {
     if (value === 'C') {
       setNumpadInput('')
     } else if (value === 'ENTER') {
-      if (!numpadInput) return
+      if (!numpadInput || !selectedProduct) return
       
-      if (inputMode === 'quantity') {
-        // Move to price input
-        const qty = parseInt(numpadInput)
-        if (qty > 0) {
-          setTempQuantity(qty)
-          setInputMode('price')
-          setNumpadInput('')
-        }
-      } else {
-        // Add to cart
-        const price = parseFloat(numpadInput)
-        if (price > 0 && selectedProduct) {
-          addToCart(selectedProduct, tempQuantity, price)
-          setShowNumpad(false)
-          setSelectedProduct(null)
-          setNumpadInput('')
-          setInputMode('quantity')
-          setTempQuantity(1)
-        }
+      const qty = parseInt(numpadInput)
+      const price = selectedProduct.sellingPrice || 0
+      
+      if (qty > 0 && price > 0) {
+        addToCart(selectedProduct, qty, price)
+        setShowNumpad(false)
+        setSelectedProduct(null)
+        setNumpadInput('')
+        setTempQuantity(1)
       }
     } else {
       setNumpadInput(prev => prev + value)
@@ -800,27 +791,24 @@ export default function POSPage() {
                 <h3 className="text-xl font-bold text-slate-900 mb-2">
                   {selectedProduct.fullname || selectedProduct.name}
                 </h3>
-                <p className="text-sm text-slate-600">
-                  Stock: {selectedProduct.currentStock} units
-                </p>
+                <div className="flex justify-between items-center">
+                  <p className="text-sm text-slate-600">
+                    Stock: {selectedProduct.currentStock} units
+                  </p>
+                  <p className="text-lg font-bold text-blue-600">
+                    {formatPrice(selectedProduct.sellingPrice || 0)}
+                  </p>
+                </div>
               </div>
 
               {/* Display */}
               <div className="mb-6 bg-slate-100 rounded-xl p-4">
                 <div className="text-sm text-slate-600 mb-1">
-                  {inputMode === 'quantity' ? 'Enter Quantity:' : 'Enter Price:'}
+                  Enter Quantity:
                 </div>
                 <div className="text-3xl font-bold text-slate-900 h-12 flex items-center">
                   {numpadInput || '0'}
-                  {inputMode === 'price' && numpadInput && (
-                    <span className="text-2xl text-slate-600 ml-2">€</span>
-                  )}
                 </div>
-                {inputMode === 'price' && tempQuantity > 0 && (
-                  <div className="text-sm text-slate-600 mt-2">
-                    Quantity: {tempQuantity}
-                  </div>
-                )}
               </div>
 
               {/* Numpad */}
@@ -846,33 +834,13 @@ export default function POSPage() {
                 >
                   0
                 </button>
-                {inputMode === 'price' && (
-                  <button
-                    onClick={() => handleNumpadClick('.')}
-                    className="py-4 text-2xl font-bold bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
-                  >
-                    .
-                  </button>
-                )}
-                {inputMode === 'quantity' && (
-                  <button
-                    onClick={() => handleNumpadClick('ENTER')}
-                    className="py-4 text-lg font-bold bg-green-500 hover:bg-green-600 text-white rounded-xl transition-all"
-                  >
-                    Next
-                  </button>
-                )}
-              </div>
-
-              {/* Enter button for price mode */}
-              {inputMode === 'price' && (
                 <button
                   onClick={() => handleNumpadClick('ENTER')}
-                  className="w-full py-4 text-lg font-bold bg-green-500 hover:bg-green-600 text-white rounded-xl transition-all mb-3"
+                  className="py-4 text-lg font-bold bg-green-500 hover:bg-green-600 text-white rounded-xl transition-all"
                 >
-                  Add to Cart
+                  Add
                 </button>
-              )}
+              </div>
 
               {/* Cancel button */}
               <button
@@ -880,10 +848,9 @@ export default function POSPage() {
                   setShowNumpad(false)
                   setSelectedProduct(null)
                   setNumpadInput('')
-                  setInputMode('quantity')
                   setTempQuantity(1)
                 }}
-                className="w-full py-3 text-sm font-medium bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl transition-all"
+                className="w-full py-3 text-sm font-medium bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl transition-all mt-3"
               >
                 Cancel
               </button>

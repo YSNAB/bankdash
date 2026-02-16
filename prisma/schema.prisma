@@ -37,11 +37,13 @@ model Product {
   storage         String?
   color           String?
   fullname        String?          @map("fullname")
+  sellingPrice    Float?           @map("selling_price")
   currentStock    Int              @default(0) @map("current_stock")
   minimalStock    Int?             @map("minimal_stock")
   purchaseDetails PurchaseDetail[] @relation("ProductToPurchaseDetail")
   orderDetails    OrderDetail[]    @relation("ProductToOrderDetail")
   stockMovements  StockMovement[]
+
 
   @@map("products")
 }
