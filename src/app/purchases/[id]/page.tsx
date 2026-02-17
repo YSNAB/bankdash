@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { formatPrice } from '@/lib/formatPrice'import { requireAdmin } from '@/lib/auth'
+import { formatPrice } from '@/lib/formatPrice'
+import { requireAdmin } from '@/lib/auth'
+
 interface Supplier {
   id: number
   name: string
