@@ -7,8 +7,15 @@
 # ========================================
 
 # === CONFIGURATION ===
-$URL_CASHIER = "http://localhost:3000/pos/cashier"
-$URL_CUSTOMER = "http://localhost:3000/pos/customer?session=demo-session"
+# Set your session ID (unique per POS terminal)
+$SESSION_ID = "kassa-1"
+
+# Base URL (change localhost:3000 to your deployed URL)
+$BASE_URL = "http://localhost:3000"
+
+# Build full URLs with session ID
+$URL_CASHIER = "$BASE_URL/pos/cashier?session=$SESSION_ID"
+$URL_CUSTOMER = "$BASE_URL/pos/customer?session=$SESSION_ID"
 
 # Chrome executable path
 $CHROME = "C:\Program Files\Google\Chrome\Application\chrome.exe"

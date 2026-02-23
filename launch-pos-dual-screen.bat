@@ -8,8 +8,15 @@ REM   Screen 2: Customer display
 REM ========================================
 
 REM === CONFIGURATION ===
-SET URL_CASHIER=http://localhost:3000/pos/cashier
-SET URL_CUSTOMER=http://localhost:3000/pos/customer?session=demo-session
+REM Set your session ID (unique per POS terminal)
+SET SESSION_ID=kassa-1
+
+REM Base URL (change localhost:3000 to your deployed URL)
+SET BASE_URL=http://localhost:3000
+
+REM Build full URLs with session ID
+SET URL_CASHIER=%BASE_URL%/pos/cashier?session=%SESSION_ID%
+SET URL_CUSTOMER=%BASE_URL%/pos/customer?session=%SESSION_ID%
 
 REM Chrome executable path (adjust if needed)
 SET CHROME="C:\Program Files\Google\Chrome\Application\chrome.exe"
@@ -24,6 +31,7 @@ SET SCREEN_HEIGHT=1080
 
 REM === LAUNCH ===
 echo Starting POS dual-screen mode...
+echo Session ID: %SESSION_ID%
 echo.
 echo Screen 1 (Cashier): %URL_CASHIER%
 echo Screen 2 (Customer): %URL_CUSTOMER%

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { usePOSChannel } from '@/hooks/usePOSChannel';
 
 interface Product {
@@ -24,22 +25,32 @@ const SAMPLE_PRODUCTS: Product[] = [
 ];
 
 export default function CashierPage() {
+  const searchParams = useSearchParams();
   const [sessionId, setSessionId] = useState<string>('');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [customerWindow, setCustomerWindow] = useState<Window | null>(null);
   const { sendCartUpdate, clearCart: sendClearCart } = usePOSChannel(sessionId);
 
-  // Generate session ID on mount
+  // Get session ID from URL params or localStorage or generate new
   useEffect(() => {
-    const existingSession = localStorage.getItem('pos-session');
-    if (existingSession) {
-      setSessionId(existingSession);
+    const urlSession = searchParams.get('session');
+    
+    if (urlSession) {
+      // Use session from URL (highest priority)
+      setSessionId(urlSession);
+      localStorage.setItem('pos-session', urlSession);
     } else {
-      const newSession = 'pos-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-      localStorage.setItem('pos-session', newSession);
-      setSessionId(newSession);
+      // Fallback to localStorage or generate new
+      const existingSession = localStorage.getItem('pos-session');
+      if (existingSession) {
+        setSessionId(existingSession);
+      } else {
+        const newSession = 'pos-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('pos-session', newSession);
+        setSessionId(newSession);
+      }
     }
-  }, []);
+  }, [searchParams]);
 
   // Send cart updates to customer screen
   useEffect(() => {
