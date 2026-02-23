@@ -2,109 +2,271 @@
 
 Two Windows scripts to launch the POS system with dual monitors in fullscreen kiosk mode.
 
-## Files
+## 🚀 Quick Start
 
-- **`launch-pos-dual-screen.bat`** — Simple batch file (fixed 1920x1080 screens)
-- **`launch-pos-dual-screen.ps1`** — PowerShell script (auto-detects screen resolution & position)
-
-## Usage
-
-### Option 1: Batch File (Simple)
-
-1. Edit `launch-pos-dual-screen.bat`
-2. Update the URLs:
-   ```batch
-   SET URL_CASHIER=http://localhost:3000/pos/cashier
-   SET URL_CUSTOMER=http://localhost:3000/pos/customer?session=xxx
-   ```
-3. Double-click to run
-
-**Note:** Assumes 1920x1080 monitors. If your screens are different, adjust `SCREEN_WIDTH` and `SCREEN_HEIGHT`.
-
-### Option 2: PowerShell (Auto-detect)
+### Recommended: PowerShell Script (Auto-detect)
 
 1. Edit `launch-pos-dual-screen.ps1`
-2. Update the URLs:
+2. Set your session ID and URL:
    ```powershell
-   $URL_CASHIER = "http://localhost:3000/pos/cashier"
-   $URL_CUSTOMER = "http://localhost:3000/pos/customer?session=xxx"
+   $SESSION_ID = "kassa-1"          # Unique ID per terminal
+   $BASE_URL = "http://localhost:3000"  # Or your deployed URL
    ```
 3. Right-click → **Run with PowerShell**
 
-**Recommended:** Use this version — it auto-detects screen positions and resolutions.
+The script will:
+- Auto-detect both monitors
+- Show screen positions
+- Launch cashier on primary screen
+- Launch customer display on secondary screen
 
-### First-time PowerShell Setup
+### Alternative: Batch File
 
-If you get an execution policy error:
+1. Edit `launch-pos-dual-screen.bat`
+2. Configure session ID, URL, and **screen positions**:
+   ```batch
+   SET SESSION_ID=kassa-1
+   SET BASE_URL=http://localhost:3000
+   
+   REM Adjust these for your monitor setup:
+   SET SCREEN2_X=1920  # X position of second monitor
+   SET SCREEN2_Y=0     # Y position of second monitor
+   ```
+3. Double-click to run
 
-```powershell
-Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+## 🖥️ Finding Your Screen Positions
+
+### Method 1: Windows Display Settings
+1. Right-click Desktop → **Display Settings**
+2. Look at monitor arrangement diagram
+3. Identify positions:
+   - **Side-by-side (horizontal):**
+     - Secondary right of primary: `X=1920, Y=0` (for 1920px width)
+     - Secondary left of primary: `X=-1920, Y=0`
+   - **Stacked (vertical):**
+     - Secondary below primary: `X=0, Y=1080` (for 1080px height)
+     - Secondary above primary: `X=0, Y=-1080`
+
+### Method 2: Use PowerShell Script
+Run the PowerShell script once — it will show detected positions:
+```
+✓ Screen 1 (Primary): \\.\DISPLAY1
+  Bounds: 0,0 | 1920x1080
+
+✓ Screen 2 (Secondary): \\.\DISPLAY2
+  Bounds: 1920,0 | 1920x1080
 ```
 
-Then run the script again.
+Use these values in the batch file if needed.
 
-## How It Works
+## 🔧 Key Improvements (Latest Version)
 
-1. Opens Chrome in kiosk mode (no browser UI, fullscreen)
-2. Positions cashier window on primary monitor
-3. Positions customer display on secondary monitor
-4. Both windows run independently
+### ✅ Separate Chrome Profiles
+Each screen uses its own Chrome user profile:
+```
+--user-data-dir=%TEMP%\chrome-pos-cashier-kassa-1
+--user-data-dir=%TEMP%\chrome-pos-customer-kassa-1
+```
 
-## Closing the POS
+**Why this matters:**
+- Chrome treats them as completely separate windows
+- Better window positioning control
+- No profile conflicts
 
-- **Close Chrome windows:** Alt+F4 on each window
-- **Kill all Chrome:** Task Manager → End Chrome processes
+### ✅ PowerShell Auto-Detection
+- Uses `System.Windows.Forms.Screen` API
+- Detects actual monitor bounds
+- No manual configuration needed
+- Shows warnings if only 1 monitor detected
 
-## Customization
+### ✅ Better Chrome Flags
+```
+--kiosk              # Fullscreen, no browser UI
+--noerrdialogs       # Suppress error popups
+--disable-infobars   # Hide info bars
+--new-window         # Force new window
+```
 
-### Change Chrome Path
+## 📝 Configuration Reference
 
-If Chrome is installed elsewhere, edit the `CHROME` variable:
+### Session ID
+```powershell
+$SESSION_ID = "kassa-1"  # Unique per terminal
+```
 
-**Batch:**
+**Multi-terminal setup:**
+- Terminal 1: `kassa-1`
+- Terminal 2: `kassa-2`
+- Terminal 3: `kassa-3`
+
+Each session is isolated — BroadcastChannel only syncs within same session ID.
+
+### Base URL
+
+**Development (local):**
+```powershell
+$BASE_URL = "http://localhost:3000"
+```
+
+**Production (deployed):**
+```powershell
+$BASE_URL = "https://yourdomain.com"
+```
+
+### Chrome Path
+
+**Default:**
+```
+C:\Program Files\Google\Chrome\Application\chrome.exe
+```
+
+**If Chrome is elsewhere:**
 ```batch
 SET CHROME="C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
 ```
 
-**PowerShell:**
+**Chromium/Edge:**
 ```powershell
-$CHROME = "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
+$CHROME = "C:\Program Files\Microsoft\Edge\Application\msedge.exe"
 ```
 
-### Session ID
+## 🛠️ Troubleshooting
 
-Replace `demo-session` with a real session ID or make it dynamic:
+### Both windows open on same screen
 
-**PowerShell (generate random session):**
+**PowerShell script:**
+- Check output — does it detect 2 screens?
+- If only 1 detected: verify Windows recognizes both monitors (Display Settings)
+
+**Batch script:**
+- Adjust `SCREEN2_X` and `SCREEN2_Y` values
+- Use values from Display Settings or PowerShell script output
+
+### Windows open but not fullscreen
+
+Chrome kiosk mode should force fullscreen. If not:
+- Try pressing `F11` manually on each window
+- Check if another app is blocking fullscreen (task bar always visible, etc.)
+
+### Chrome doesn't open
+
+1. Check Chrome path:
+   ```powershell
+   Test-Path "C:\Program Files\Google\Chrome\Application\chrome.exe"
+   ```
+2. Try opening Chrome manually first
+3. Check if Chrome is already running — close all instances first
+
+### "Execution Policy" error (PowerShell)
+
+**Quick fix:**
 ```powershell
-$sessionId = "pos-" + (Get-Date -Format "yyyyMMddHHmmss")
-$URL_CUSTOMER = "http://localhost:3000/pos/customer?session=$sessionId"
+powershell -ExecutionPolicy Bypass -File .\launch-pos-dual-screen.ps1
 ```
 
-### Add Startup
+**Permanent fix (as Administrator):**
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
 
-To auto-launch on Windows boot:
+### Screens swap/wrong positions
 
+**PowerShell:** Should handle this automatically
+
+**Batch:** Swap the X/Y values:
+```batch
+REM If customer screen appears on primary:
+SET SCREEN1_X=1920  # Swap these
+SET SCREEN2_X=0     # Swap these
+```
+
+## 🚀 Auto-Start on Windows Boot
+
+### Method 1: Startup Folder
 1. Press `Win+R`, type `shell:startup`, press Enter
-2. Create a shortcut to the `.bat` or `.ps1` file
-3. Restart to test
+2. Create shortcut to `.bat` or `.ps1` file
+3. Restart Windows to test
 
-## Troubleshooting
+### Method 2: Task Scheduler
+1. Open **Task Scheduler**
+2. Create Basic Task → **When computer starts**
+3. Action: **Start a program**
+4. Program: `powershell.exe`
+5. Arguments: `-ExecutionPolicy Bypass -WindowStyle Hidden -File "C:\path\to\launch-pos-dual-screen.ps1"`
 
-**Chrome doesn't open:**
-- Check Chrome installation path
-- Try opening Chrome manually first
+## 📊 How It Works
 
-**Both windows on same screen:**
-- Check if Windows recognizes both monitors (Display Settings)
-- Use PowerShell version (auto-detects)
-- Manually set screen positions in batch file
+### Architecture
+```
+┌─────────────────────┐         ┌─────────────────────┐
+│   Screen 1          │         │   Screen 2          │
+│   (Primary)         │         │   (Secondary)       │
+│                     │         │                     │
+│  ┌───────────────┐  │         │  ┌───────────────┐  │
+│  │   Cashier     │  │         │  │   Customer    │  │
+│  │   Interface   │◄─┼─────────┼─►│   Display     │  │
+│  │               │  │  Sync   │  │               │  │
+│  │ ?session=     │  │  via    │  │ ?session=     │  │
+│  │   kassa-1     │  │Channel  │  │   kassa-1     │  │
+│  └───────────────┘  │         │  └───────────────┘  │
+└─────────────────────┘         └─────────────────────┘
+         ▲                                ▲
+         │         BroadcastChannel       │
+         └────────────────────────────────┘
+              (pos-kassa-1)
+```
 
-**Fullscreen not working:**
-- Kiosk mode should override everything
-- Check if another app is blocking fullscreen
-- Try `F11` manually after launch
+### Session Flow
+1. Both URLs include `?session=kassa-1`
+2. Each page connects to BroadcastChannel `pos-kassa-1`
+3. Cashier updates cart → broadcasts via channel
+4. Customer screen receives update → displays in real-time
+5. No server-side sync needed (client-to-client)
 
-## License
+## 🔒 Security Notes
 
-Free to use for your POS system.
+- BroadcastChannel is **same-origin only** (secure)
+- Session ID in URL is **not sensitive** (just a pairing key)
+- No authentication needed for POS display screens
+- For production: consider HTTPS for deployed URL
+
+## 📚 Further Customization
+
+### Add third screen (kitchen display, etc.)
+Create another URL:
+```powershell
+$URL_KITCHEN = "$BASE_URL/pos/kitchen?session=$SESSION_ID"
+```
+
+Launch with:
+```powershell
+Start-Process -FilePath $CHROME -ArgumentList @(
+    "--kiosk"
+    "--user-data-dir=$tempDir\chrome-pos-kitchen-$SESSION_ID"
+    "--window-position=$screen3_x,$screen3_y"
+    $URL_KITCHEN
+)
+```
+
+### Change screen resolution
+Adjust in batch file:
+```batch
+SET SCREEN_WIDTH=1366
+SET SCREEN_HEIGHT=768
+```
+
+PowerShell auto-detects this.
+
+## 📄 License
+
+Free to use for your POS system. No warranty provided.
+
+## 🆘 Support
+
+Issues with the launcher? Check:
+1. Chrome is installed and path is correct
+2. Both monitors are connected and recognized by Windows
+3. URLs are accessible (test in browser first)
+4. No firewall blocking localhost (if using local dev server)
+
+For app-specific issues (cart sync, UI bugs), check the main bankdash repo.
