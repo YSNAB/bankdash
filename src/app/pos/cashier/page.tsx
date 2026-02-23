@@ -87,26 +87,43 @@ export default function CashierPage() {
     
     // Open customer display in a new window
     const url = `/pos/customer?session=${sessionId}`;
-    const width = 800;
-    const height = 600;
     
-    // Try to position on second monitor (right side of primary)
-    const left = window.screen.width;
-    const top = 0;
+    // Get screen dimensions
+    const screenWidth = window.screen.width;
+    const screenHeight = window.screen.height;
+    
+    // If dual monitor (screen.availWidth > screen.width), position on second monitor
+    const hasSecondMonitor = window.screen.availWidth > screenWidth;
+    
+    let left, top, width, height;
+    
+    if (hasSecondMonitor) {
+      // Position on second monitor (right side)
+      left = screenWidth;
+      top = 0;
+      width = window.screen.availWidth - screenWidth;
+      height = screenHeight;
+    } else {
+      // Single monitor - open maximized
+      left = 0;
+      top = 0;
+      width = screenWidth;
+      height = screenHeight;
+    }
     
     const newWindow = window.open(
       url,
       'customer-display',
-      `width=${width},height=${height},left=${left},top=${top},fullscreen=yes`
+      `width=${width},height=${height},left=${left},top=${top}`
     );
     
     if (newWindow) {
       setCustomerWindow(newWindow);
-      // Try to go fullscreen after a short delay
+      
+      // Try to trigger fullscreen after a short delay
       setTimeout(() => {
-        newWindow.document.documentElement.requestFullscreen?.().catch(() => {
-          // Fullscreen might be blocked, window is still usable
-        });
+        // Send message to customer window to request fullscreen
+        newWindow.postMessage({ type: 'request-fullscreen' }, window.location.origin);
       }, 500);
     }
   }, [sessionId]);

@@ -31,6 +31,16 @@ export default function CustomerDisplayPage() {
   useEffect(() => {
     if (!sessionId) return;
 
+    // Listen for fullscreen request from opener window
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'request-fullscreen') {
+        document.documentElement.requestFullscreen?.().catch(() => {
+          // Fullscreen blocked - show button instead
+        });
+      }
+    };
+    window.addEventListener('message', handleMessage);
+
     // Try to go fullscreen on mount
     const enterFullscreen = async () => {
       try {
@@ -38,6 +48,7 @@ export default function CustomerDisplayPage() {
         setIsFullscreen(true);
       } catch {
         // Fullscreen not allowed or not supported
+        // User will need to click the fullscreen button
       }
     };
     
@@ -60,6 +71,7 @@ export default function CustomerDisplayPage() {
     };
 
     return () => {
+      window.removeEventListener('message', handleMessage);
       channel.close();
     };
   }, [sessionId]);
