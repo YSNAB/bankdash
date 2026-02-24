@@ -43,7 +43,9 @@ export function requireAuth(): User {
   const user = getUser()
   if (!user) {
     if (typeof window !== 'undefined') {
-      window.location.href = '/'
+      const currentUrl = window.location.pathname + window.location.search
+      const redirectParam = encodeURIComponent(currentUrl)
+      window.location.href = `/?redirect=${redirectParam}`
     }
     throw new Error('Not authenticated')
   }

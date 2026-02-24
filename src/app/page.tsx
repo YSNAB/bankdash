@@ -1,14 +1,23 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
   const router = useRouter()
+  const [redirectUrl, setRedirectUrl] = useState<string | null>(null)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const redirect = params.get('redirect')
+    if (redirect) {
+      setRedirectUrl(redirect)
+    }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -39,8 +48,10 @@ export default function LoginPage() {
       // Store user data in localStorage
       localStorage.setItem('user', JSON.stringify(data.user))
       
-      // Redirect based on role
-      if (data.user.role === 'ADMIN') {
+      // Redirect to original URL if available, otherwise based on role
+      if (redirectUrl) {
+        router.push(redirectUrl)
+      } else if (data.user.role === 'ADMIN') {
         router.push('/dashboard')
       } else if (data.user.role === 'EMPLOYEE') {
         router.push('/pos')
