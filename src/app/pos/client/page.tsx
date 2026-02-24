@@ -1,11 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { formatPrice } from '@/lib/formatPrice'
-
-// Forceer dynamic rendering (geen static)
-export const dynamic = 'force-dynamic'
 
 interface CartItem {
   productId: number
@@ -27,7 +24,7 @@ interface POSSession {
   lastUpdated: number
 }
 
-export default function POSClientPage() {
+function POSClientContent() {
   const searchParams = useSearchParams()
   const [session, setSession] = useState<POSSession | null>(null)
   const [error, setError] = useState('')
@@ -223,5 +220,17 @@ export default function POSClientPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function POSClientPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-white p-8">
+        <h1 className="text-2xl font-bold mb-4">Laden...</h1>
+      </div>
+    }>
+      <POSClientContent />
+    </Suspense>
   )
 }

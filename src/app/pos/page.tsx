@@ -1,12 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { formatPrice } from '@/lib/formatPrice'
 import { requireAuth, getUser, canAccessAdmin } from '@/lib/auth'
-
-// Forceer dynamic rendering (geen static)
-export const dynamic = 'force-dynamic'
 
 interface Product {
   id: number
@@ -40,7 +37,7 @@ interface Customer {
   region: string
 }
 
-export default function POSPage() {
+function POSContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [user, setUser] = useState<{ name: string | null; role: string } | null>(null)
@@ -1684,5 +1681,17 @@ export default function POSPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function POSPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+        <div className="text-slate-600 text-lg">Loading POS...</div>
+      </div>
+    }>
+      <POSContent />
+    </Suspense>
   )
 }
