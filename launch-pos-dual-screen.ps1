@@ -11,7 +11,7 @@
 $SESSION_ID = "kassa-1"
 
 # Base URL (change localhost:3000 to your deployed URL)
-$BASE_URL = "http://localhost:3000"
+$BASE_URL = "http://192.168.1.74:3000"
 
 # Build full URLs with session ID
 $URL_CASHIER = "$BASE_URL/pos/cashier?session=$SESSION_ID"
