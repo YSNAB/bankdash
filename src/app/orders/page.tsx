@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { requireAdmin } from '@/lib/auth'
 import { formatPrice } from '@/lib/formatPrice'
 
+export const dynamic = 'force-dynamic'
+
 interface Customer {
   id: number
   name: string
