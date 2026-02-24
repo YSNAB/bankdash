@@ -33,7 +33,7 @@ function POSClientContent() {
 
   const sessionId = searchParams.get('sessie')
 
-  // Server-Sent Events voor real-time updates
+  // Server-Sent Events voor real-time updates met polling fallback
   useEffect(() => {
     if (!sessionId) {
       setError('Geen sessie ID opgegeven')
@@ -42,52 +42,100 @@ function POSClientContent() {
     }
 
     let eventSource: EventSource | null = null
+    let pollingInterval: ReturnType<typeof setInterval> | null = null
+    let sseWorking = false
+
+    const fetchSession = async () => {
+      try {
+        const res = await fetch(`/api/pos/sessions?sessionId=${sessionId}`)
+        if (res.ok) {
+          const data = await res.json()
+          setSession(data)
+          setIsLoading(false)
+        }
+      } catch (err) {
+        console.error('Error fetching session:', err)
+      }
+    }
+
+    // Start polling als fallback (elke 2 seconden)
+    const startPolling = () => {
+      if (pollingInterval) return
+      setConnectionStatus('connected')
+      pollingInterval = setInterval(fetchSession, 1000)
+    }
+
+    const stopPolling = () => {
+      if (pollingInterval) {
+        clearInterval(pollingInterval)
+        pollingInterval = null
+      }
+    }
 
     const connectSSE = () => {
       setConnectionStatus('connecting')
-      
-      // Maak SSE connectie
-      eventSource = new EventSource(`/api/pos/sessions/stream?sessionId=${sessionId}`)
 
-      eventSource.onopen = () => {
-        setConnectionStatus('connected')
-        setError('')
-      }
+      // Haal eerst de initiële data op
+      fetchSession()
 
-      eventSource.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data)
-          
-          // Check of het een connectie bericht is
-          if (data.type === 'connected') {
-            // Haal initiële sessie data op
-            fetch(`/api/pos/sessions?sessionId=${sessionId}`)
-              .then(res => res.json())
-              .then(session => {
-                setSession(session)
-                setIsLoading(false)
-              })
-              .catch(err => {
-                setError('Fout bij ophalen initiële data')
-                setIsLoading(false)
-              })
-          } else {
-            // Update van sessie
-            setSession(data)
-            setIsLoading(false)
+      try {
+        // Maak SSE connectie
+        eventSource = new EventSource(`/api/pos/sessions/stream?sessionId=${sessionId}`)
+
+        const sseTimeout = setTimeout(() => {
+          // Als SSE na 5 seconden niet werkt, gebruik polling
+          if (!sseWorking) {
+            console.log('SSE not working, falling back to polling')
+            eventSource?.close()
+            startPolling()
           }
-        } catch (err) {
-          console.error('Error parsing SSE data:', err)
-        }
-      }
+        }, 5000)
 
-      eventSource.onerror = (err) => {
-        console.error('SSE error:', err)
-        setConnectionStatus('disconnected')
-        eventSource?.close()
-        
-        // Probeer opnieuw te verbinden na 2 seconden
-        setTimeout(connectSSE, 2000)
+        eventSource.onopen = () => {
+          sseWorking = true
+          setConnectionStatus('connected')
+          setError('')
+          stopPolling()
+          clearTimeout(sseTimeout)
+        }
+
+        eventSource.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data)
+            sseWorking = true
+            stopPolling()
+
+            if (data.type === 'connected') {
+              // SSE is verbonden, initiële data is al opgehaald
+            } else {
+              // Update van sessie
+              setSession(data)
+              setIsLoading(false)
+            }
+          } catch (err) {
+            console.error('Error parsing SSE data:', err)
+          }
+        }
+
+        eventSource.onerror = () => {
+          setConnectionStatus('disconnected')
+          eventSource?.close()
+          sseWorking = false
+
+          // Fallback naar polling
+          startPolling()
+
+          // Probeer SSE opnieuw na 10 seconden
+          setTimeout(() => {
+            if (!sseWorking) {
+              connectSSE()
+            }
+          }, 10000)
+        }
+      } catch {
+        // SSE niet beschikbaar, gebruik alleen polling
+        console.log('SSE not available, using polling')
+        startPolling()
       }
     }
 
@@ -96,6 +144,7 @@ function POSClientContent() {
     // Cleanup bij unmount
     return () => {
       eventSource?.close()
+      stopPolling()
     }
   }, [sessionId])
 

@@ -1,7 +1,5 @@
 import { NextRequest } from 'next/server'
-
-// Deze functie wordt aangeroepen door de sessions route om updates te broadcasten
-export const listeners = new Map<string, Set<(data: string) => void>>()
+import { addListener, removeListener } from '@/lib/posSessionStore'
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
@@ -13,7 +11,7 @@ export async function GET(request: NextRequest) {
 
   // Setup SSE stream
   const encoder = new TextEncoder()
-  
+
   const stream = new ReadableStream({
     start(controller) {
       // Stuur initiële connectie bericht
@@ -22,25 +20,21 @@ export async function GET(request: NextRequest) {
 
       // Maak listener functie voor deze client
       const listener = (data: string) => {
-        const message = `data: ${data}\n\n`
-        controller.enqueue(encoder.encode(message))
+        try {
+          const message = `data: ${data}\n\n`
+          controller.enqueue(encoder.encode(message))
+        } catch {
+          // Stream is closed, remove listener
+          removeListener(sessionId, listener)
+        }
       }
 
-      // Registreer listener voor deze sessie
-      if (!listeners.has(sessionId)) {
-        listeners.set(sessionId, new Set())
-      }
-      listeners.get(sessionId)!.add(listener)
+      // Registreer listener voor deze sessie (via shared globalThis store)
+      addListener(sessionId, listener)
 
       // Cleanup bij disconnect
       request.signal.addEventListener('abort', () => {
-        const sessionListeners = listeners.get(sessionId)
-        if (sessionListeners) {
-          sessionListeners.delete(listener)
-          if (sessionListeners.size === 0) {
-            listeners.delete(sessionId)
-          }
-        }
+        removeListener(sessionId, listener)
       })
     },
   })
@@ -50,6 +44,7 @@ export async function GET(request: NextRequest) {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache, no-transform',
       'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no',
     },
   })
 }
