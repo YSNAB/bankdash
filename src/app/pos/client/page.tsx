@@ -157,116 +157,140 @@ function POSClientContent() {
     return subtotal - (session?.discount || 0)
   }
 
+  const calculateVAT = () => {
+    if (session?.paymentType !== 'factuur') return 0
+    const total = calculateTotal()
+    return total * 0.21
+  }
+
+  const calculateTotalIncVAT = () => {
+    return calculateTotal() + calculateVAT()
+  }
+
+  const calculateOpen = () => {
+    const total = session?.paymentType === 'factuur' ? calculateTotalIncVAT() : calculateTotal()
+    return total - (session?.paidAmount || 0)
+  }
+
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white p-8">
-        <h1 className="text-2xl font-bold mb-4">Laden...</h1>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <span className="text-lg text-gray-400">Laden...</span>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-white p-8">
-        <h1 className="text-2xl font-bold mb-4 text-red-600">Fout</h1>
-        <p className="text-lg">{error}</p>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <span className="text-lg text-red-500">{error}</span>
       </div>
     )
   }
 
-  return (
-    <div className="min-h-screen bg-white p-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">Phonbank POS - Client View</h1>
-        
-        <div className="mb-4 p-4 bg-gray-100 rounded">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Sessie ID: {sessionId}</p>
-              <p className="text-sm text-gray-600">Laatst bijgewerkt: {session?.lastUpdated ? new Date(session.lastUpdated).toLocaleTimeString('nl-NL') : '-'}</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className={`w-3 h-3 rounded-full ${
-                connectionStatus === 'connected' ? 'bg-green-500' : 
-                connectionStatus === 'connecting' ? 'bg-yellow-500' : 
-                'bg-red-500'
-              }`}></div>
-              <span className="text-sm text-gray-600">
-                {connectionStatus === 'connected' ? 'Live' : 
-                 connectionStatus === 'connecting' ? 'Verbinden...' : 
-                 'Verbroken'}
-              </span>
-            </div>
-          </div>
-        </div>
+  const itemCount = session?.cart.reduce((sum, item) => sum + item.quantity, 0) || 0
 
-        <h2 className="text-2xl font-semibold mb-4">Winkelwagen</h2>
-        
+  return (
+    <div className="min-h-screen bg-white text-gray-900 flex flex-col">
+      {/* Product list - scrollable area above fixed footer */}
+      <div className="flex-1 overflow-y-auto pb-44">
+        {/* Connection indicator - tiny top bar */}
+        <div className={`h-1 w-full ${
+          connectionStatus === 'connected' ? 'bg-green-500' :
+          connectionStatus === 'connecting' ? 'bg-yellow-400' :
+          'bg-red-500'
+        }`} />
+
         {!session?.cart || session.cart.length === 0 ? (
-          <p className="text-gray-500 text-lg">Winkelwagen is leeg</p>
+          <div className="flex items-center justify-center h-[60vh] text-gray-300 text-xl">
+            Winkelwagen is leeg
+          </div>
         ) : (
-          <div className="space-y-4">
+          <div className="divide-y divide-gray-100">
             {session.cart.map((item, index) => (
-              <div key={index} className="border-b pb-4">
-                <h3 className="text-xl font-semibold">{item.productName}</h3>
-                <div className="text-gray-700 space-y-1 mt-2">
+              <div key={index} className="flex items-center justify-between px-4 py-3 text-sm">
+                {/* Left: qty + details */}
+                <div className="flex items-baseline gap-2 min-w-0 flex-1">
+                  <span className="font-bold text-base tabular-nums shrink-0">{item.quantity}x</span>
                   {item.conditionRegion && (
-                    <p>Conditie: {item.conditionRegion}</p>
+                    <span className="text-gray-500 shrink-0">{item.conditionRegion}</span>
+                  )}
+                  <span className="font-medium truncate">{item.productName}</span>
+                  {item.color && (
+                    <span className="text-gray-400 shrink-0">{item.color}</span>
                   )}
                   {item.storage && (
-                    <p>Opslag: {item.storage}</p>
+                    <span className="text-gray-400 shrink-0">{item.storage}</span>
                   )}
-                  {item.color && (
-                    <p>Kleur: {item.color}</p>
-                  )}
-                  <p>Aantal: {item.quantity}</p>
-                  <p>Prijs per stuk: {formatPrice(item.price)}</p>
-                  <p className="font-semibold">Totaal: {formatPrice(item.price * item.quantity)}</p>
+                </div>
+                {/* Right: prices */}
+                <div className="flex items-baseline gap-4 shrink-0 ml-4 tabular-nums">
+                  <span className="text-gray-400 text-xs">{formatPrice(item.price)}</span>
+                  <span className="font-semibold text-base">{formatPrice(item.price * item.quantity)}</span>
                 </div>
               </div>
             ))}
-
-            <div className="mt-6 pt-4 border-t-2 border-black">
-              <div className="space-y-2 text-lg">
-                <div className="flex justify-between">
-                  <span>Subtotaal:</span>
-                  <span>{formatPrice(calculateSubtotal())}</span>
-                </div>
-                
-                {session.discount > 0 && (
-                  <div className="flex justify-between text-red-600">
-                    <span>Korting:</span>
-                    <span>-{formatPrice(session.discount)}</span>
-                  </div>
-                )}
-
-                <div className="flex justify-between text-2xl font-bold pt-2 border-t">
-                  <span>Totaal:</span>
-                  <span>{formatPrice(calculateTotal())}</span>
-                </div>
-
-                {session.paymentType === 'factuur' && (
-                  <div className="text-gray-600 mt-2">
-                    <p>Betaalwijze: Factuur</p>
-                  </div>
-                )}
-
-                {session.paymentType === 'cash' && session.paidAmount > 0 && (
-                  <div className="mt-4 pt-2 border-t">
-                    <div className="flex justify-between">
-                      <span>Betaald:</span>
-                      <span>{formatPrice(session.paidAmount)}</span>
-                    </div>
-                    <div className="flex justify-between font-semibold">
-                      <span>Wisselgeld:</span>
-                      <span>{formatPrice(session.paidAmount - calculateTotal())}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
         )}
+      </div>
+
+      {/* Fixed footer */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200">
+        <div className="px-4 py-3 space-y-1 text-sm">
+          {/* Subtotal */}
+          <div className="flex justify-between text-gray-500">
+            <span>Subtotaal ({itemCount} {itemCount === 1 ? 'item' : 'items'})</span>
+            <span className="tabular-nums">{formatPrice(calculateSubtotal())}</span>
+          </div>
+
+          {/* Discount */}
+          {(session?.discount || 0) > 0 && (
+            <div className="flex justify-between text-red-500">
+              <span>Korting</span>
+              <span className="tabular-nums">-{formatPrice(session!.discount)}</span>
+            </div>
+          )}
+
+          {/* VAT for invoices */}
+          {session?.paymentType === 'factuur' && (
+            <div className="flex justify-between text-gray-500">
+              <span>BTW 21%</span>
+              <span className="tabular-nums">{formatPrice(calculateVAT())}</span>
+            </div>
+          )}
+
+          {/* Divider before total */}
+          <div className="border-t border-gray-900 pt-2 mt-1">
+            <div className="flex justify-between text-2xl font-bold">
+              <span>Totaal</span>
+              <span className="tabular-nums">
+                {formatPrice(session?.paymentType === 'factuur' ? calculateTotalIncVAT() : calculateTotal())}
+              </span>
+            </div>
+          </div>
+
+          {/* Paid & Open */}
+          {(session?.paidAmount || 0) > 0 && (
+            <div className="flex justify-between text-gray-500 pt-1">
+              <span>Betaald</span>
+              <span className="tabular-nums">{formatPrice(session!.paidAmount)}</span>
+            </div>
+          )}
+
+          {(session?.paidAmount || 0) > 0 && (
+            <div className="flex justify-between font-semibold text-lg">
+              <span>{calculateOpen() > 0 ? 'Open' : 'Wisselgeld'}</span>
+              <span className="tabular-nums">
+                {calculateOpen() > 0 ? formatPrice(calculateOpen()) : formatPrice(Math.abs(calculateOpen()))}
+              </span>
+            </div>
+          )}
+
+          {/* Payment type badge */}
+          {session?.paymentType === 'factuur' && (
+            <div className="text-xs text-gray-400 text-right">Factuur</div>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -275,8 +299,8 @@ function POSClientContent() {
 export default function POSClientPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-white p-8">
-        <h1 className="text-2xl font-bold mb-4">Laden...</h1>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <span className="text-lg text-gray-400">Laden...</span>
       </div>
     }>
       <POSClientContent />
