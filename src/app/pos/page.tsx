@@ -5,6 +5,9 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { formatPrice } from '@/lib/formatPrice'
 import { requireAuth, getUser, canAccessAdmin } from '@/lib/auth'
 
+// Forceer dynamic rendering (geen static)
+export const dynamic = 'force-dynamic'
+
 interface Product {
   id: number
   name: string

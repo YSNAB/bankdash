@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { formatPrice } from '@/lib/formatPrice'
 
+// Forceer dynamic rendering (geen static)
+export const dynamic = 'force-dynamic'
+
 interface CartItem {
   productId: number
   productName: string
