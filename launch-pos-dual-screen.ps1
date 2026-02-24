@@ -2,134 +2,133 @@
 # POS Dual-Screen Launcher (PowerShell)
 # ========================================
 # Opens two Chrome windows in kiosk mode:
-#   Screen 1: Cashier interface
-#   Screen 2: Customer display
+#   Screen 1 (Primary):   Cashier interface
+#   Screen 2 (Secondary): Customer display
+# ========================================
+# Usage: Right-click -> Run with PowerShell
+#   or:  powershell -ExecutionPolicy Bypass -File launch-pos-dual-screen.ps1
 # ========================================
 
+try {
+
 # === CONFIGURATION ===
-# Set your session ID (unique per POS terminal)
-$SESSION_ID = "kassa-1"
+$SESSION_ID  = "kassa-1"
+$BASE_URL    = "http://192.168.1.74:3000"
 
-# Base URL (change localhost:3000 to your deployed URL)
-$BASE_URL = "http://192.168.1.74:3000"
-
-# Build full URLs with session ID
-$URL_CASHIER = "$BASE_URL/pos/cashier?session=$SESSION_ID"
+$URL_CASHIER  = "$BASE_URL/pos/cashier?session=$SESSION_ID"
 $URL_CUSTOMER = "$BASE_URL/pos/customer?session=$SESSION_ID"
 
-# Chrome executable path
-$CHROME = "C:\Program Files\Google\Chrome\Application\chrome.exe"
-
-# Check if Chrome exists
-if (-not (Test-Path $CHROME)) {
-    Write-Host "Chrome not found at: $CHROME" -ForegroundColor Red
-    Write-Host "Please update the CHROME variable in this script." -ForegroundColor Yellow
-    pause
+# --- Locate Chrome ---
+$CHROME = $null
+$chromePaths = @(
+    "$env:ProgramFiles\Google\Chrome\Application\chrome.exe",
+    "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe",
+    "$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe"
+)
+foreach ($p in $chromePaths) {
+    if (Test-Path $p) { $CHROME = $p; break }
+}
+if (-not $CHROME) {
+    Write-Host "ERROR: Chrome not found in any default location." -ForegroundColor Red
+    Write-Host "Searched:" -ForegroundColor Yellow
+    foreach ($p in $chromePaths) { Write-Host "  $p" -ForegroundColor Gray }
+    Write-Host ""
+    Write-Host "Press any key to exit..." -ForegroundColor Gray
+    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
     exit 1
 }
+Write-Host "Chrome found: $CHROME" -ForegroundColor Green
 
-# Auto-detect screen positions
+# --- Detect screens ---
 Add-Type -AssemblyName System.Windows.Forms
 $screens = [System.Windows.Forms.Screen]::AllScreens
 
+Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "POS Dual-Screen Launcher" -ForegroundColor Cyan
+Write-Host " POS Dual-Screen Launcher"               -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "Session ID: $SESSION_ID" -ForegroundColor Green
-Write-Host "Detected screens: $($screens.Count)" -ForegroundColor Yellow
+Write-Host "Session : $SESSION_ID"                    -ForegroundColor Green
+Write-Host "Screens : $($screens.Count)"              -ForegroundColor Yellow
 Write-Host ""
 
 if ($screens.Count -lt 2) {
-    Write-Warning "Only 1 monitor detected!"
-    Write-Host "Both windows will open on the same screen." -ForegroundColor Yellow
-    Write-Host "Please connect a second monitor and restart." -ForegroundColor Yellow
+    Write-Warning "Only 1 monitor detected! Both windows will open on the same screen."
+    Write-Host "Connect a second monitor and re-run this script." -ForegroundColor Yellow
     Write-Host ""
-    
     $screen1 = $screens[0]
     $screen2 = $screens[0]
 } else {
-    # Primary monitor (usually left/main)
-    $screen1 = $screens | Where-Object { $_.Primary -eq $true } | Select-Object -First 1
-    
-    # Secondary monitor (first non-primary)
-    $screen2 = $screens | Where-Object { $_.Primary -eq $false } | Select-Object -First 1
-    
-    Write-Host "✓ Screen 1 (Primary): $($screen1.DeviceName)" -ForegroundColor Green
-    Write-Host "  Bounds: $($screen1.Bounds.X),$($screen1.Bounds.Y) | ${screen1.Bounds.Width}x${screen1.Bounds.Height}" -ForegroundColor Gray
-    Write-Host ""
-    Write-Host "✓ Screen 2 (Secondary): $($screen2.DeviceName)" -ForegroundColor Green
-    Write-Host "  Bounds: $($screen2.Bounds.X),$($screen2.Bounds.Y) | ${screen2.Bounds.Width}x${screen2.Bounds.Height}" -ForegroundColor Gray
+    $screen1 = $screens | Where-Object { $_.Primary } | Select-Object -First 1
+    $screen2 = $screens | Where-Object { -not $_.Primary } | Select-Object -First 1
+
+    $s1b = $screen1.Bounds
+    $s2b = $screen2.Bounds
+    Write-Host ("Screen 1 (Primary)  : {0}  {1},{2}  {3}x{4}" -f $screen1.DeviceName, $s1b.X, $s1b.Y, $s1b.Width, $s1b.Height) -ForegroundColor Green
+    Write-Host ("Screen 2 (Secondary): {0}  {1},{2}  {3}x{4}" -f $screen2.DeviceName, $s2b.X, $s2b.Y, $s2b.Width, $s2b.Height) -ForegroundColor Green
     Write-Host ""
 }
 
-# Screen 1 (Cashier) position and size
-$screen1_x = $screen1.Bounds.X
-$screen1_y = $screen1.Bounds.Y
-$screen1_width = $screen1.Bounds.Width
-$screen1_height = $screen1.Bounds.Height
+# --- Build positions ---
+$s1 = $screen1.Bounds
+$s2 = $screen2.Bounds
 
-# Screen 2 (Customer) position and size
-$screen2_x = $screen2.Bounds.X
-$screen2_y = $screen2.Bounds.Y
-$screen2_width = $screen2.Bounds.Width
-$screen2_height = $screen2.Bounds.Height
+# --- Separate Chrome profiles so both windows can coexist ---
+$cashierProfile  = Join-Path $env:TEMP "chrome-pos-cashier-$SESSION_ID"
+$customerProfile = Join-Path $env:TEMP "chrome-pos-customer-$SESSION_ID"
 
-# === LAUNCH ===
-Write-Host "Launching cashier screen..." -ForegroundColor Cyan
+# === LAUNCH CASHIER on Screen 1 ===
+Write-Host "Launching Cashier on Screen 1..." -ForegroundColor Cyan
 
-# Kill existing Chrome kiosk instances (optional - uncomment to auto-restart)
-# Get-Process chrome -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -like "*pos*" } | Stop-Process -Force
-
-# Create temporary Chrome user data directories (separate profiles = separate windows)
-$tempDir = $env:TEMP
-$cashierProfile = "$tempDir\chrome-pos-cashier-$SESSION_ID"
-$customerProfile = "$tempDir\chrome-pos-customer-$SESSION_ID"
-
-# Launch cashier on primary monitor
-$cashier_args = @(
-    "--kiosk"
-    "--user-data-dir=$cashierProfile"
-    "--window-position=$screen1_x,$screen1_y"
-    "--window-size=$screen1_width,$screen1_height"
-    "--new-window"
-    "--noerrdialogs"
-    "--disable-infobars"
+$cashierArgs = @(
+    "--kiosk",
+    "--new-window",
+    "--noerrdialogs",
+    "--disable-infobars",
+    "--disable-session-crashed-bubble",
+    "--user-data-dir=`"$cashierProfile`"",
+    "--window-position=$($s1.X),$($s1.Y)",
+    "--window-size=$($s1.Width),$($s1.Height)",
     $URL_CASHIER
 )
 
-$cashierProcess = Start-Process -FilePath $CHROME -ArgumentList $cashier_args -PassThru
-Write-Host "✓ Cashier launched (PID: $($cashierProcess.Id))" -ForegroundColor Green
+$cashierProc = Start-Process -FilePath $CHROME -ArgumentList $cashierArgs -PassThru
+Write-Host "  Cashier PID: $($cashierProc.Id)" -ForegroundColor Green
 
-# Wait for first window to fully load
-Write-Host "Waiting 3 seconds before launching customer screen..." -ForegroundColor Gray
-Start-Sleep -Seconds 3
+# Give the first window time to grab its screen before launching the second
+Start-Sleep -Seconds 4
 
-Write-Host "Launching customer screen..." -ForegroundColor Cyan
+# === LAUNCH CUSTOMER on Screen 2 ===
+Write-Host "Launching Customer on Screen 2..." -ForegroundColor Cyan
 
-# Launch customer display on secondary monitor
-$customer_args = @(
-    "--kiosk"
-    "--user-data-dir=$customerProfile"
-    "--window-position=$screen2_x,$screen2_y"
-    "--window-size=$screen2_width,$screen2_height"
-    "--new-window"
-    "--noerrdialogs"
-    "--disable-infobars"
+$customerArgs = @(
+    "--kiosk",
+    "--new-window",
+    "--noerrdialogs",
+    "--disable-infobars",
+    "--disable-session-crashed-bubble",
+    "--user-data-dir=`"$customerProfile`"",
+    "--window-position=$($s2.X),$($s2.Y)",
+    "--window-size=$($s2.Width),$($s2.Height)",
     $URL_CUSTOMER
 )
 
-$customerProcess = Start-Process -FilePath $CHROME -ArgumentList $customer_args -PassThru
-Write-Host "✓ Customer display launched (PID: $($customerProcess.Id))" -ForegroundColor Green
+$customerProc = Start-Process -FilePath $CHROME -ArgumentList $customerArgs -PassThru
+Write-Host "  Customer PID: $($customerProc.Id)" -ForegroundColor Green
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "Both screens launched successfully!" -ForegroundColor Green
+Write-Host " Both screens launched!"                  -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "To close POS:" -ForegroundColor Yellow
-Write-Host "  1. Press Alt+F4 on each Chrome window" -ForegroundColor Gray
-Write-Host "  2. Or close from Task Manager" -ForegroundColor Gray
+Write-Host "Close POS: Alt+F4 on each window, or end Chrome from Task Manager." -ForegroundColor Yellow
+
+} catch {
+    Write-Host ""
+    Write-Host "ERROR: $_" -ForegroundColor Red
+    Write-Host $_.ScriptStackTrace -ForegroundColor DarkRed
+}
+
 Write-Host ""
-Write-Host "Press any key to close this launcher window..." -ForegroundColor Gray
+Write-Host "Press any key to close this window..." -ForegroundColor Gray
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
