@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { formatPrice } from '@/lib/formatPrice'
 import { requireAuth, getUser, canAccessAdmin } from '@/lib/auth'
 
@@ -39,7 +39,9 @@ interface Customer {
 
 export default function POSPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [user, setUser] = useState<{ name: string | null; role: string } | null>(null)
+  const [sessionId, setSessionId] = useState<string | null>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
@@ -76,6 +78,7 @@ export default function POSPage() {
   const [newCustomerLocation, setNewCustomerLocation] = useState('')
   const [newCustomerRegion, setNewCustomerRegion] = useState<'NL' | 'EU' | 'Non-EU'>('NL')
   const [customerSearchQuery, setCustomerSearchQuery] = useState('')
+  const [showNoSessionWarning, setShowNoSessionWarning] = useState(false)
 
   // Helper function to get background color based on product color
   const getColorClass = (color: string | null): string => {
@@ -142,6 +145,61 @@ export default function POSPage() {
     fetchProducts()
     fetchCustomers()
   }, [router])
+
+  // Initialiseer sessie uit URL parameter
+  useEffect(() => {
+    const sessionParam = searchParams.get('sessie')
+    if (sessionParam) {
+      setSessionId(sessionParam)
+      // Laad sessie data
+      loadSession(sessionParam)
+    } else {
+      // Geen sessie parameter - toon waarschuwing
+      setShowNoSessionWarning(true)
+    }
+  }, [searchParams])
+
+  const loadSession = async (sessionId: string) => {
+    try {
+      const response = await fetch(`/api/pos/sessions?sessionId=${sessionId}`)
+      if (response.ok) {
+        const session = await response.json()
+        setCart(session.cart || [])
+        setSelectedCustomerId(session.selectedCustomerId)
+        setPaymentType(session.paymentType)
+        setDiscount(session.discount)
+        setPaidAmount(session.paidAmount)
+      }
+    } catch (error) {
+      console.error('Error loading session:', error)
+    }
+  }
+
+  // Synchroniseer cart wijzigingen naar sessie
+  useEffect(() => {
+    if (!sessionId) return
+
+    const syncSession = async () => {
+      try {
+        await fetch('/api/pos/sessions', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId,
+            cart,
+            selectedCustomerId,
+            paymentType,
+            discount,
+            paidAmount
+          })
+        })
+      } catch (error) {
+        console.error('Error syncing session:', error)
+      }
+    }
+
+    syncSession()
+  }, [sessionId, cart, selectedCustomerId, paymentType, discount, paidAmount])
 
   useEffect(() => {
     // Filter products based on selected filters and search query
@@ -1572,6 +1630,50 @@ export default function POSPage() {
                   className="flex-1 px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Create Customer
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* No Session Warning Modal */}
+        {showNoSessionWarning && (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-6">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
+              {/* Header */}
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-orange-600">⚠️ Geen Sessie</h2>
+                <button
+                  onClick={() => setShowNoSessionWarning(false)}
+                  className="text-slate-500 hover:text-slate-700 text-3xl font-bold leading-none"
+                >
+                  ×
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="space-y-4">
+                <p className="text-slate-700 text-lg">
+                  Er is geen sessie ID opgegeven in de URL.
+                </p>
+                <p className="text-slate-600">
+                  De klantweergave werkt niet zonder een sessie parameter.
+                </p>
+                <div className="bg-slate-100 p-4 rounded-lg">
+                  <p className="text-sm text-slate-600 mb-2">Gebruik een URL zoals:</p>
+                  <code className="text-sm text-blue-600 break-all">
+                    /pos?sessie=kassa1
+                  </code>
+                </div>
+              </div>
+
+              {/* Button */}
+              <div className="mt-6">
+                <button
+                  onClick={() => setShowNoSessionWarning(false)}
+                  className="w-full px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold transition-all"
+                >
+                  Begrepen
                 </button>
               </div>
             </div>
