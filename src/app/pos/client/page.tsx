@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { formatPrice } from '@/lib/formatPrice'
+import { resolvePOSSessionId } from '@/lib/posSessionLink'
 
 interface CartItem {
   productId: number
@@ -21,10 +22,12 @@ interface POSSession {
   paymentType: 'cash' | 'factuur'
   discount: number
   paidAmount: number
+  cashierLoggedIn: boolean
   lastUpdated: number
 }
 
 function POSClientContent() {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const [session, setSession] = useState<POSSession | null>(null)
   const [error, setError] = useState('')
@@ -35,11 +38,20 @@ function POSClientContent() {
 
   // Server-Sent Events voor real-time updates met polling fallback
   useEffect(() => {
-    if (!sessionId) {
+    const resolvedSessionId = resolvePOSSessionId(searchParams)
+
+    if (!resolvedSessionId) {
       setError('Geen sessie ID opgegeven')
       setIsLoading(false)
       return
     }
+
+    if (!sessionId) {
+      router.replace(`/pos/client?sessie=${encodeURIComponent(resolvedSessionId)}`)
+    }
+
+    setError('')
+    setIsLoading(true)
 
     let eventSource: EventSource | null = null
     let pollingInterval: ReturnType<typeof setInterval> | null = null
@@ -47,7 +59,7 @@ function POSClientContent() {
 
     const fetchSession = async () => {
       try {
-        const res = await fetch(`/api/pos/sessions?sessionId=${sessionId}`)
+        const res = await fetch(`/api/pos/sessions?sessionId=${resolvedSessionId}`)
         if (res.ok) {
           const data = await res.json()
           setSession(data)
@@ -80,7 +92,7 @@ function POSClientContent() {
 
       try {
         // Maak SSE connectie
-        eventSource = new EventSource(`/api/pos/sessions/stream?sessionId=${sessionId}`)
+        eventSource = new EventSource(`/api/pos/sessions/stream?sessionId=${resolvedSessionId}`)
 
         const sseTimeout = setTimeout(() => {
           // Als SSE na 5 seconden niet werkt, gebruik polling
@@ -146,7 +158,7 @@ function POSClientContent() {
       eventSource?.close()
       stopPolling()
     }
-  }, [sessionId])
+  }, [router, searchParams, sessionId])
 
   const calculateSubtotal = () => {
     return session?.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0
@@ -188,12 +200,13 @@ function POSClientContent() {
     )
   }
 
+  const showWelcomeScreen = session?.cashierLoggedIn === false
   const itemCount = session?.cart.reduce((sum, item) => sum + item.quantity, 0) || 0
 
   return (
     <div className="min-h-screen bg-white text-gray-900 flex flex-col">
       {/* Product list - scrollable area above fixed footer */}
-      <div className="flex-1 overflow-y-auto pb-44">
+      <div className={`flex-1 overflow-y-auto ${showWelcomeScreen ? '' : 'pb-44'}`}>
         {/* Connection indicator - tiny top bar */}
         <div className={`h-1 w-full ${
           connectionStatus === 'connected' ? 'bg-green-500' :
@@ -201,7 +214,15 @@ function POSClientContent() {
           'bg-red-500'
         }`} />
 
-        {!session?.cart || session.cart.length === 0 ? (
+        {showWelcomeScreen ? (
+          <div className="min-h-[calc(100vh-4px)] flex items-center justify-center bg-gradient-to-b from-white to-slate-50 px-8">
+            <div className="text-center">
+              <div className="text-4xl font-bold text-slate-900 mb-3">Welkom bij PhoneBank</div>
+              <div className="text-lg text-slate-500 mb-2">Kassascherm is uitgelogd</div>
+              <div className="text-base text-slate-400">Wacht tot een medewerker opnieuw inlogt</div>
+            </div>
+          </div>
+        ) : !session?.cart || session.cart.length === 0 ? (
           <div className="flex items-center justify-center h-[60vh] text-gray-300 text-xl">
             Winkelwagen is leeg
           </div>
@@ -235,6 +256,7 @@ function POSClientContent() {
       </div>
 
       {/* Fixed footer */}
+      {!showWelcomeScreen && (
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200">
         <div className="px-4 py-3 space-y-1 text-sm">
           {/* Subtotal */}
@@ -292,6 +314,7 @@ function POSClientContent() {
           )}
         </div>
       </div>
+      )}
     </div>
   )
 }

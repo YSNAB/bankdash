@@ -1,3 +1,5 @@
+import { getPOSLoginUrl } from './posSessionLink'
+
 export type UserRole = 'ADMIN' | 'EMPLOYEE'
 
 export interface User {
@@ -57,7 +59,7 @@ export function requirePOSAuth(): User {
   if (!user) {
     if (typeof window !== 'undefined') {
       // POS pages redirect to PIN login
-      window.location.href = '/pos/login'
+      window.location.href = getPOSLoginUrl()
     }
     throw new Error('Not authenticated')
   }

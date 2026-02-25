@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { resolvePOSSessionId } from '@/lib/posSessionLink'
 
 interface User {
   id: string
@@ -20,7 +21,13 @@ export default function POSLogin() {
 
   useEffect(() => {
     fetchUsers()
-  }, [])
+
+    const params = new URLSearchParams(window.location.search)
+    const resolvedSessionId = resolvePOSSessionId(params)
+    if (!params.get('sessie') && resolvedSessionId) {
+      router.replace(`/pos/login?sessie=${encodeURIComponent(resolvedSessionId)}`)
+    }
+  }, [router])
 
   const fetchUsers = async () => {
     try {
@@ -93,11 +100,10 @@ export default function POSLogin() {
       // Store user data
       localStorage.setItem('user', JSON.stringify(data.user))
 
-      // Redirect to POS with session parameter if available
-      const params = new URLSearchParams(window.location.search)
-      const sessionParam = params.get('sessie')
+      // Redirect to POS with persisted session link (restored from URL or localStorage)
+      const sessionParam = resolvePOSSessionId(new URLSearchParams(window.location.search))
       if (sessionParam) {
-        router.push(`/pos?sessie=${sessionParam}`)
+        router.push(`/pos?sessie=${encodeURIComponent(sessionParam)}`)
       } else {
         router.push('/pos')
       }

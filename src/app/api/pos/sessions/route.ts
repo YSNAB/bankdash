@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 // PUT - Update een sessie
 export async function PUT(request: NextRequest) {
   const body = await request.json()
-  const { sessionId, cart, selectedCustomerId, paymentType, discount, paidAmount } = body
+  const { sessionId, cart, selectedCustomerId, paymentType, discount, paidAmount, cashierLoggedIn } = body
 
   if (!sessionId) {
     return NextResponse.json({ error: 'Session ID is required' }, { status: 400 })
@@ -29,6 +29,7 @@ export async function PUT(request: NextRequest) {
     paymentType,
     discount,
     paidAmount,
+    cashierLoggedIn,
   })
 
   return NextResponse.json(updatedSession)

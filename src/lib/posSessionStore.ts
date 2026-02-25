@@ -18,6 +18,7 @@ export interface POSSession {
   paymentType: 'cash' | 'factuur'
   discount: number
   paidAmount: number
+  cashierLoggedIn: boolean
   lastUpdated: number
 }
 
@@ -50,6 +51,7 @@ export function getOrCreateSession(sessionId: string): POSSession {
       paymentType: 'cash',
       discount: 0,
       paidAmount: 0,
+      cashierLoggedIn: false,
       lastUpdated: Date.now(),
     }
     sessions.set(sessionId, session)
@@ -74,6 +76,10 @@ export function updateSession(
     discount: data.discount !== undefined ? data.discount : session.discount,
     paidAmount:
       data.paidAmount !== undefined ? data.paidAmount : session.paidAmount,
+    cashierLoggedIn:
+      data.cashierLoggedIn !== undefined
+        ? data.cashierLoggedIn
+        : session.cashierLoggedIn,
     lastUpdated: Date.now(),
   }
 

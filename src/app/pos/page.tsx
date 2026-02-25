@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { formatPrice } from '@/lib/formatPrice'
 import { requirePOSAuth, getUser, canAccessAdmin } from '@/lib/auth'
+import { getPOSLoginUrl, resolvePOSSessionId } from '@/lib/posSessionLink'
 import { printReceipt, connectPrinter, isPrinterConnected, findPrinter, type ReceiptData } from '@/lib/receiptPrinter'
 
 interface Product {
@@ -157,15 +158,23 @@ function POSContent() {
   // Initialiseer sessie uit URL parameter
   useEffect(() => {
     const sessionParam = searchParams.get('sessie')
-    if (sessionParam) {
-      setSessionId(sessionParam)
+    const resolvedSessionId = resolvePOSSessionId(searchParams)
+
+    if (resolvedSessionId) {
+      setShowNoSessionWarning(false)
+      setSessionId(resolvedSessionId)
+
+      if (!sessionParam) {
+        router.replace(`/pos?sessie=${encodeURIComponent(resolvedSessionId)}`)
+      }
+
       // Laad sessie data
-      loadSession(sessionParam)
+      loadSession(resolvedSessionId)
     } else {
       // Geen sessie parameter - toon waarschuwing
       setShowNoSessionWarning(true)
     }
-  }, [searchParams])
+  }, [router, searchParams])
 
   const loadSession = async (sessionId: string) => {
     try {
@@ -198,7 +207,8 @@ function POSContent() {
             selectedCustomerId,
             paymentType,
             discount,
-            paidAmount
+            paidAmount,
+            cashierLoggedIn: true
           })
         })
       } catch (error) {
@@ -718,9 +728,24 @@ function POSContent() {
     }
   }
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (sessionId) {
+      try {
+        await fetch('/api/pos/sessions', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId,
+            cashierLoggedIn: false
+          })
+        })
+      } catch (error) {
+        console.error('Error updating POS logout state:', error)
+      }
+    }
+
     localStorage.removeItem('user')
-    router.push('/')
+    router.push(getPOSLoginUrl())
   }
 
   if (isLoading) {
