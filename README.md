@@ -100,6 +100,54 @@ The project includes two example models:
 
 Customize these models in `prisma/schema.prisma` based on your needs.
 
+## Receipt Printer Integration
+
+### System Behavior
+
+The POS system **automatically uses the default printer** set in your operating system. When you print a receipt:
+
+1. The system connects to QZ Tray
+2. It queries for the current default printer
+3. It sends the receipt to that printer
+
+**Changing Default Printer**: If you change the default printer in your OS, the POS will automatically use the new default printer on the next print - no restart required.
+
+### Prerequisites
+
+- **QZ Tray** must be installed and running
+- Printer must support **ESC/POS** commands (most thermal receipt printers do)
+- Certificates must be configured in environment variables
+
+### Quick Start
+
+1. Install QZ Tray from https://qz.io/download/
+2. Generate certificates (see DEPLOYMENT.md)
+3. Add to `.env.local`:
+```env
+QZ_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
+QZ_CERTIFICATE="-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"
+```
+4. Set your desired printer as the default in your OS
+5. Start the POS - it will automatically detect and use it
+
+### Troubleshooting Printer Issues
+
+**Problem**: "Printer not found" error
+- Check QZ Tray is running (icon in system tray)
+- Ensure a printer is set as default in your OS
+- Verify printer is powered on and connected
+
+**Problem**: Wrong printer is being used
+- Check which printer is set as **default** in your OS
+- The POS always uses the default printer
+- Change the default printer in OS settings, then try printing again
+
+**Problem**: Print preview appears instead of printing
+- Your default "printer" is set to "Microsoft Print to PDF" or similar
+- Set a physical printer as default in OS settings
+
+For more details, see [DEPLOYMENT.md](DEPLOYMENT.md).
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
