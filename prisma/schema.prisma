@@ -17,13 +17,16 @@ enum UserRole {
 
 // User authentication model
 model User {
-  id        String   @id @default(cuid())
-  username  String   @unique
-  password  String   // Store hashed password (use bcrypt)
-  name      String?
-  role      UserRole @default(EMPLOYEE)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String    @id @default(cuid())
+  username       String    @unique
+  password       String    // Store hashed password (use bcrypt)
+  pin            String?   // PIN for POS login (4-6 digits, hashed with bcrypt)
+  name           String?
+  role           UserRole  @default(EMPLOYEE)
+  failedAttempts Int       @default(0) @map("failed_attempts")
+  lockedUntil    DateTime? @map("locked_until")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }
 
 // Products model

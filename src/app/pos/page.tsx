@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { formatPrice } from '@/lib/formatPrice'
-import { requireAuth, getUser, canAccessAdmin } from '@/lib/auth'
+import { requirePOSAuth, getUser, canAccessAdmin } from '@/lib/auth'
 import { printReceipt, connectPrinter, isPrinterConnected, findPrinter, type ReceiptData } from '@/lib/receiptPrinter'
 
 interface Product {
@@ -139,15 +139,19 @@ function POSContent() {
   }
 
   useEffect(() => {
-    try {
-      const userData = requireAuth()
-      setUser(userData)
-    } catch {
-      return
-    }
-    
+    // Load data immediately (before auth check)
+    // This improves UX since users will likely login
     fetchProducts()
     fetchCustomers()
+
+    // Then check auth
+    try {
+      const userData = requirePOSAuth()
+      setUser(userData)
+    } catch {
+      // Will redirect to login, but data is already loading
+      return
+    }
   }, [router])
 
   // Initialiseer sessie uit URL parameter
