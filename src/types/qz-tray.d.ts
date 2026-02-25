@@ -26,6 +26,11 @@ declare module 'qz-tray' {
       ) => unknown
     }
     print: (config: unknown, data: string[] | PrintData[]) => Promise<void>
+    security: {
+      setCertificatePromise: (callback: (resolve: (cert: string) => void, reject: (error: unknown) => void) => void) => void
+      setSignatureAlgorithm: (algorithm: 'SHA1' | 'SHA256' | 'SHA512') => void
+      setSignaturePromise: (callback: (toSign: string) => (resolve: (signature: string) => void, reject: (error: unknown) => void) => void) => void
+    }
   }
 
   const qz: QZ
