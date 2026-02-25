@@ -30,6 +30,57 @@ export interface ReceiptData {
 // ─── QZ Tray Connection ──────────────────────────────────────────────────────
 
 let connected = false
+let signingConfigured = false
+
+// Configure server-side signing
+async function configureServerSigning(): Promise<void> {
+  if (signingConfigured) return
+
+  try {
+    // Set up certificate promise - callback style as per QZ Tray docs
+    qz.security.setCertificatePromise(function(resolve, reject) {
+      console.log('[Printer] Fetching certificate from server...')
+      fetch('/api/qz/sign', {cache: 'no-store', headers: {'Content-Type': 'text/plain'}})
+        .then(function(data) { 
+          if (data.ok) {
+            data.text().then(function(cert) {
+              console.log('[Printer] Certificate received')
+              resolve(cert)
+            })
+          } else {
+            data.text().then(reject)
+          }
+        })
+    })
+
+    // Set signature algorithm (required since QZ Tray 2.1)
+    qz.security.setSignatureAlgorithm('SHA512')
+
+    // Set up signature promise - returns a function with (resolve, reject)
+    qz.security.setSignaturePromise(function(toSign) {
+      return function(resolve, reject) {
+        console.log('[Printer] Signing request...')
+        fetch('/api/qz/sign?request=' + toSign, {cache: 'no-store', headers: {'Content-Type': 'text/plain'}})
+          .then(function(data) { 
+            if (data.ok) {
+              data.text().then(function(signature) {
+                console.log('[Printer] Signature received')
+                resolve(signature)
+              })
+            } else {
+              data.text().then(reject)
+            }
+          })
+      }
+    })
+
+    signingConfigured = true
+    console.log('[Printer] Server-side signing configured')
+  } catch (err) {
+    console.error('[Printer] Failed to configure signing:', err)
+    throw err
+  }
+}
 
 export async function connectPrinter(): Promise<void> {
   if (qz.websocket.isActive()) {
@@ -38,6 +89,9 @@ export async function connectPrinter(): Promise<void> {
   }
 
   try {
+    // Configure signing before connecting
+    await configureServerSigning()
+    
     console.log('[Printer] Connecting to QZ Tray...')
     await qz.websocket.connect()
     connected = true
