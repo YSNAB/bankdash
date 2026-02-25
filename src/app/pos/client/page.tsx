@@ -46,8 +46,8 @@ function POSClientContent() {
       return
     }
 
-    if (!sessionId) {
-      router.replace(`/pos/client?sessie=${encodeURIComponent(resolvedSessionId)}`)
+    if (sessionId) {
+      router.replace('/pos/client')
     }
 
     setError('')

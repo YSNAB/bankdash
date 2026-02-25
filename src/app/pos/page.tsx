@@ -164,8 +164,8 @@ function POSContent() {
       setShowNoSessionWarning(false)
       setSessionId(resolvedSessionId)
 
-      if (!sessionParam) {
-        router.replace(`/pos?sessie=${encodeURIComponent(resolvedSessionId)}`)
+      if (sessionParam) {
+        router.replace('/pos')
       }
 
       // Laad sessie data

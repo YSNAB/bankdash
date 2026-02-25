@@ -42,21 +42,11 @@ export function getPOSLoginUrl(): string {
   if (typeof window === 'undefined') return '/pos/login'
 
   const params = new URLSearchParams(window.location.search)
-  const sessionId = resolvePOSSessionId(params)
-
-  if (!sessionId) {
-    return '/pos/login'
-  }
-
-  return `/pos/login?sessie=${encodeURIComponent(sessionId)}`
+  // Bootstrap-only: persist sessie from URL if present, then navigate without query param.
+  resolvePOSSessionId(params)
+  return '/pos/login'
 }
 
 export function getPOSUrl(): string {
-  const sessionId = readStoredPOSSessionId()
-  if (!sessionId) {
-    return '/pos'
-  }
-
-  return `/pos?sessie=${encodeURIComponent(sessionId)}`
+  return '/pos'
 }
-

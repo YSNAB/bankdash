@@ -23,9 +23,9 @@ export default function POSLogin() {
     fetchUsers()
 
     const params = new URLSearchParams(window.location.search)
-    const resolvedSessionId = resolvePOSSessionId(params)
-    if (!params.get('sessie') && resolvedSessionId) {
-      router.replace(`/pos/login?sessie=${encodeURIComponent(resolvedSessionId)}`)
+    resolvePOSSessionId(params)
+    if (params.get('sessie')) {
+      router.replace('/pos/login')
     }
   }, [router])
 
@@ -101,12 +101,8 @@ export default function POSLogin() {
       localStorage.setItem('user', JSON.stringify(data.user))
 
       // Redirect to POS with persisted session link (restored from URL or localStorage)
-      const sessionParam = resolvePOSSessionId(new URLSearchParams(window.location.search))
-      if (sessionParam) {
-        router.push(`/pos?sessie=${encodeURIComponent(sessionParam)}`)
-      } else {
-        router.push('/pos')
-      }
+      resolvePOSSessionId(new URLSearchParams(window.location.search))
+      router.push('/pos')
     } catch (err) {
       console.error('Login error:', err)
       setError('An error occurred. Please try again.')
