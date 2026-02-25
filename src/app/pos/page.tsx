@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useState, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { formatPrice } from '@/lib/formatPrice'
 import { requireAuth, getUser, canAccessAdmin } from '@/lib/auth'
+import { printReceipt, connectPrinter, isPrinterConnected, findPrinter, type ReceiptData } from '@/lib/receiptPrinter'
 
 interface Product {
   id: number
@@ -79,6 +80,9 @@ function POSContent() {
   const [newCustomerRegion, setNewCustomerRegion] = useState<'NL' | 'EU' | 'Non-EU'>('NL')
   const [customerSearchQuery, setCustomerSearchQuery] = useState('')
   const [showNoSessionWarning, setShowNoSessionWarning] = useState(false)
+  const [printerConnected, setPrinterConnected] = useState(false)
+  const [printerName, setPrinterName] = useState<string | null>(null)
+  const [isPrinting, setIsPrinting] = useState(false)
 
   // Helper function to get background color based on product color
   const getColorClass = (color: string | null): string => {
@@ -613,6 +617,11 @@ function POSContent() {
       if (response.ok) {
         const data = await response.json()
         setSuccess(`Order #${data.id} created successfully!`)
+
+        // Print receipt automatically
+        const receiptData = buildReceiptData(data.id)
+        handlePrintReceipt(receiptData).catch(console.error)
+
         setCart([])
         setSelectedCustomerId(null)
         setSearchQuery('')
@@ -620,8 +629,8 @@ function POSContent() {
         setDiscount(0)
         setPaidAmount(0)
         
-        // Clear success message after 3 seconds
-        setTimeout(() => setSuccess(''), 3000)
+        // Clear success message after 5 seconds
+        setTimeout(() => setSuccess(''), 5000)
       } else {
         const errorData = await response.json()
         setError(errorData.error || 'Failed to create order')
@@ -631,6 +640,77 @@ function POSContent() {
       setError('An error occurred while creating the order')
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  // ─── Printer Setup ──────────────────────────────────────────────────────
+  const initPrinter = useCallback(async () => {
+    try {
+      await connectPrinter()
+      const name = await findPrinter()
+      console.log('[POS] Printer found:', name)
+      setPrinterName(name)
+      setPrinterConnected(!!name)
+    } catch (err) {
+      console.error('[POS] Printer init failed:', err)
+      setPrinterConnected(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    // Delay printer init slightly so page loads fast
+    const timer = setTimeout(initPrinter, 1000)
+    return () => clearTimeout(timer)
+  }, [initPrinter])
+
+  const buildReceiptData = (orderId?: number): ReceiptData => {
+    const customer = customers.find(c => c.id === selectedCustomerId)
+    return {
+      orderId,
+      date: new Date(),
+      cashier: user?.name || null,
+      customer: customer ? (customer.companyName || customer.name) : null,
+      items: cart.map(item => ({
+        quantity: item.quantity,
+        name: item.productName,
+        conditionRegion: item.conditionRegion,
+        storage: item.storage,
+        color: item.color,
+        unitPrice: item.price,
+        totalPrice: item.price * item.quantity,
+      })),
+      subtotal: calculateSubtotal(),
+      discount,
+      tax: calculateTax(),
+      total: calculateFinalTotal(),
+      paidAmount,
+      change: paymentType === 'cash' && paidAmount > calculateFinalTotal()
+        ? paidAmount - calculateFinalTotal()
+        : 0,
+      paymentType,
+    }
+  }
+
+  const handlePrintReceipt = async (receiptData?: ReceiptData) => {
+    setIsPrinting(true)
+    setError('')
+    try {
+      // Try to reconnect if not connected
+      if (!printerConnected || !printerName) {
+        console.log('[POS] Printer not ready, trying to reconnect...')
+        await initPrinter()
+      }
+      const data = receiptData || buildReceiptData()
+      await printReceipt(data, printerName || undefined)
+      console.log('[POS] Print successful')
+    } catch (err) {
+      console.error('[POS] Print error:', err)
+      const msg = err instanceof Error ? err.message : 'Onbekende fout'
+      setError(`Print fout: ${msg}`)
+      // Mark printer as disconnected so user sees the red indicator
+      setPrinterConnected(false)
+    } finally {
+      setIsPrinting(false)
     }
   }
 
@@ -1206,14 +1286,28 @@ function POSContent() {
                         )}
                       </div>
 
-                      {/* Checkout Button */}
-                      <button
-                        onClick={handleCheckout}
-                        disabled={isSubmitting || cart.length === 0 || !selectedCustomerId}
-                        className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all font-bold text-base shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isSubmitting ? 'Processing...' : 'Complete Sale'}
-                      </button>
+                      {/* Checkout & Print Buttons */}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleCheckout}
+                          disabled={isSubmitting || cart.length === 0 || !selectedCustomerId}
+                          className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all font-bold text-base shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isSubmitting ? 'Processing...' : 'Complete Sale'}
+                        </button>
+                        <button
+                          onClick={() => handlePrintReceipt()}
+                          disabled={isPrinting || cart.length === 0}
+                          className={`px-4 py-3 rounded-xl font-bold text-sm shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                            printerConnected
+                              ? 'bg-slate-700 text-white hover:bg-slate-800'
+                              : 'bg-red-100 text-red-600 hover:bg-red-200'
+                          }`}
+                          title={printerConnected ? `Printer: ${printerName}` : 'Geen printer verbonden'}
+                        >
+                          {isPrinting ? '⏳' : '🖨️'}
+                        </button>
+                      </div>
                     </div>
                   </div>
 
