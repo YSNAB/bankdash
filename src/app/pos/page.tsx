@@ -39,6 +39,14 @@ interface Customer {
   region: string
 }
 
+interface CustomerStatsItem {
+  id: number
+  totalOrders: number
+}
+
+const CUSTOMER_LETTERS = ['ALL', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')]
+const CUSTOMER_KEYBOARD_ROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM']
+
 function POSContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -80,6 +88,9 @@ function POSContent() {
   const [newCustomerLocation, setNewCustomerLocation] = useState('')
   const [newCustomerRegion, setNewCustomerRegion] = useState<'NL' | 'EU' | 'Non-EU'>('NL')
   const [customerSearchQuery, setCustomerSearchQuery] = useState('')
+  const [customerOrderCounts, setCustomerOrderCounts] = useState<Record<number, number>>({})
+  const [selectedCustomerLetter, setSelectedCustomerLetter] = useState<string>('ALL')
+  const [showCustomerKeyboard, setShowCustomerKeyboard] = useState(false)
   const [showNoSessionWarning, setShowNoSessionWarning] = useState(false)
   const [printerConnected, setPrinterConnected] = useState(false)
   const [printerName, setPrinterName] = useState<string | null>(null)
@@ -144,6 +155,7 @@ function POSContent() {
     // This improves UX since users will likely login
     fetchProducts()
     fetchCustomers()
+    fetchCustomerStats()
 
     // Then check auth
     try {
@@ -390,6 +402,20 @@ function POSContent() {
     }
   }
 
+  const fetchCustomerStats = async () => {
+    try {
+      const response = await fetch('/api/customers/stats')
+      if (response.ok) {
+        const data: CustomerStatsItem[] = await response.json()
+        setCustomerOrderCounts(
+          Object.fromEntries(data.map((customer) => [customer.id, customer.totalOrders || 0]))
+        )
+      }
+    } catch (error) {
+      console.error('Error fetching customer stats:', error)
+    }
+  }
+
   const handleCreateCustomer = async () => {
     if (!newCustomerName.trim()) {
       setError('Customer name is required')
@@ -413,8 +439,11 @@ function POSContent() {
       if (response.ok) {
         const newCustomer = await response.json()
         setCustomers(prev => [...prev, newCustomer])
+        setCustomerOrderCounts(prev => ({ ...prev, [newCustomer.id]: 0 }))
         setSelectedCustomerId(newCustomer.id)
         setCustomerSearchQuery('')
+        setSelectedCustomerLetter('ALL')
+        setShowCustomerKeyboard(false)
         setNewCustomerName('')
         setNewCustomerCompanyName('')
         setNewCustomerLocation('')
@@ -751,6 +780,60 @@ function POSContent() {
     router.push(getPOSLoginUrl())
   }
 
+  const handleCustomerKeyboardKey = (key: string) => {
+    if (key === 'BACKSPACE') {
+      setCustomerSearchQuery(prev => prev.slice(0, -1))
+      return
+    }
+    if (key === 'CLEAR') {
+      setCustomerSearchQuery('')
+      return
+    }
+    if (key === 'SPACE') {
+      setCustomerSearchQuery(prev => `${prev} `)
+      return
+    }
+    if (key === 'CLOSE') {
+      setShowCustomerKeyboard(false)
+      return
+    }
+    setCustomerSearchQuery(prev => `${prev}${key}`)
+  }
+
+  const getCustomerOrderCount = (customerId: number) => customerOrderCounts[customerId] || 0
+
+  const matchesCustomerSearch = (customer: Customer, searchLower: string) => {
+    if (!searchLower) return true
+    return (
+      customer.name.toLowerCase().includes(searchLower) ||
+      customer.companyName?.toLowerCase().includes(searchLower) ||
+      customer.location?.toLowerCase().includes(searchLower) ||
+      customer.region.toLowerCase().includes(searchLower)
+    )
+  }
+
+  const matchesCustomerLetter = (customer: Customer, letter: string) => {
+    if (letter === 'ALL') return true
+    return customer.name.trim().toUpperCase().startsWith(letter)
+  }
+
+  const customerSearchLower = customerSearchQuery.trim().toLowerCase()
+
+  const favoriteCustomers = [...customers]
+    .filter(customer => getCustomerOrderCount(customer.id) > 0)
+    .filter(customer => matchesCustomerLetter(customer, selectedCustomerLetter))
+    .sort((a, b) => {
+      const orderDiff = getCustomerOrderCount(b.id) - getCustomerOrderCount(a.id)
+      if (orderDiff !== 0) return orderDiff
+      return a.name.localeCompare(b.name)
+    })
+    .slice(0, 12)
+
+  const visibleCustomers = [...customers]
+    .filter(customer => matchesCustomerLetter(customer, selectedCustomerLetter))
+    .filter(customer => matchesCustomerSearch(customer, customerSearchLower))
+    .sort((a, b) => a.name.localeCompare(b.name))
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
@@ -1037,7 +1120,12 @@ function POSContent() {
           <div className="w-1/4 space-y-4">
             {/* Customer Selection Button */}
             <button
-              onClick={() => setShowCustomerSelectionModal(true)}
+              onClick={() => {
+                setCustomerSearchQuery('')
+                setSelectedCustomerLetter('ALL')
+                setShowCustomerKeyboard(false)
+                setShowCustomerSelectionModal(true)
+              }}
               className="w-full backdrop-blur-xl bg-white/70 border border-white/20 shadow-xl rounded-2xl p-6 hover:bg-white/80 transition-all text-left"
             >
               <h2 className="text-xl font-bold text-slate-900 mb-2">Customer</h2>
@@ -1498,6 +1586,8 @@ function POSContent() {
                   onClick={() => {
                     setShowCustomerSelectionModal(false)
                     setCustomerSearchQuery('')
+                    setSelectedCustomerLetter('ALL')
+                    setShowCustomerKeyboard(false)
                   }}
                   className="text-slate-500 hover:text-slate-700 text-4xl font-bold leading-none"
                 >
@@ -1505,19 +1595,50 @@ function POSContent() {
                 </button>
               </div>
 
-              {/* Search Bar */}
-              <div className="p-6 border-b border-slate-200">
-                <div className="flex gap-4">
+              {/* Search + Actions */}
+              <div className="p-6 border-b border-slate-200 space-y-4">
+                <div className="flex gap-3 items-stretch">
+                  <button
+                    onClick={() => setShowCustomerKeyboard((prev) => !prev)}
+                    className={`px-5 py-4 rounded-xl font-bold text-lg transition-all whitespace-nowrap ${
+                      showCustomerKeyboard
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                    }`}
+                    title="Open toetsenbord"
+                  >
+                    ⌨
+                  </button>
+
+                  <button
+                    onClick={() => handleCustomerKeyboardKey('BACKSPACE')}
+                    className="px-5 py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-lg transition-all whitespace-nowrap"
+                    title="Backspace"
+                  >
+                    ⌫
+                  </button>
+
+                  <button
+                    onClick={() => setCustomerSearchQuery('')}
+                    className="px-5 py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-lg transition-all whitespace-nowrap"
+                  >
+                    Clear
+                  </button>
+
                   <div className="flex-1">
-                    <input
-                      type="text"
-                      value={customerSearchQuery}
-                      onChange={(e) => setCustomerSearchQuery(e.target.value)}
-                      placeholder="Search customers (type at least 3 characters)..."
-                      className="w-full px-6 py-4 bg-white border-2 border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 text-lg"
-                      autoFocus
-                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCustomerKeyboard(true)}
+                      className="w-full h-full px-6 py-4 bg-white border-2 border-slate-300 rounded-xl text-left text-slate-900 text-lg hover:border-blue-400 transition-all"
+                    >
+                      {customerSearchQuery.trim() ? (
+                        <span className="font-semibold tracking-wide">{customerSearchQuery}</span>
+                      ) : (
+                        <span className="text-slate-400">Zoek klantnaam...</span>
+                      )}
+                    </button>
                   </div>
+
                   <button
                     onClick={() => setShowCustomerModal(true)}
                     className="px-6 py-4 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold text-lg transition-all whitespace-nowrap"
@@ -1525,11 +1646,70 @@ function POSContent() {
                     + Add New Customer
                   </button>
                 </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {CUSTOMER_LETTERS.map((letter) => (
+                    <button
+                      key={letter}
+                      onClick={() => setSelectedCustomerLetter(letter)}
+                      className={`min-w-[44px] px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+                        selectedCustomerLetter === letter
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                      }`}
+                    >
+                      {letter}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Customer List */}
-              <div className="flex-1 overflow-y-auto p-6">
-                {customerSearchQuery.length < 3 ? (
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                {!customerSearchLower && favoriteCustomers.length > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-lg font-bold text-slate-900">Top klanten</h3>
+                      <p className="text-sm text-slate-500">Gesorteerd op aantal orders</p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                      {favoriteCustomers.map((customer) => (
+                        <button
+                          key={`fav-${customer.id}`}
+                          onClick={() => {
+                            setSelectedCustomerId(customer.id)
+                            setShowCustomerSelectionModal(false)
+                            setCustomerSearchQuery('')
+                            setSelectedCustomerLetter('ALL')
+                            setShowCustomerKeyboard(false)
+                          }}
+                          className={`p-4 rounded-xl border-2 transition-all text-left ${
+                            selectedCustomerId === customer.id
+                              ? 'border-blue-500 bg-blue-50'
+                              : 'border-amber-200 bg-amber-50/70 hover:border-amber-300 hover:bg-amber-50'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="font-bold text-base text-slate-900 truncate">
+                                {customer.name}
+                              </div>
+                              {customer.companyName && (
+                                <div className="text-sm text-slate-600 truncate">
+                                  {customer.companyName}
+                                </div>
+                              )}
+                            </div>
+                            <div className="shrink-0 px-2 py-1 rounded-lg bg-white/80 border border-amber-200 text-amber-700 text-xs font-bold">
+                              {getCustomerOrderCount(customer.id)} orders
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {false ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center text-slate-500">
                       <p className="text-xl mb-2">Type at least 3 characters to search</p>
@@ -1544,23 +1724,15 @@ function POSContent() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {customers
-                      .filter(customer => {
-                        const searchLower = customerSearchQuery.toLowerCase()
-                        return (
-                          customer.name.toLowerCase().includes(searchLower) ||
-                          customer.companyName?.toLowerCase().includes(searchLower) ||
-                          customer.location?.toLowerCase().includes(searchLower) ||
-                          customer.region.toLowerCase().includes(searchLower)
-                        )
-                      })
-                      .map(customer => (
+                    {visibleCustomers.map(customer => (
                         <button
                           key={customer.id}
                           onClick={() => {
                             setSelectedCustomerId(customer.id)
                             setShowCustomerSelectionModal(false)
                             setCustomerSearchQuery('')
+                            setSelectedCustomerLetter('ALL')
+                            setShowCustomerKeyboard(false)
                           }}
                           className={`p-6 rounded-xl border-2 transition-all text-left ${
                             selectedCustomerId === customer.id
@@ -1568,8 +1740,13 @@ function POSContent() {
                               : 'border-slate-300 bg-white hover:border-blue-400 hover:bg-slate-50'
                           }`}
                         >
-                          <div className="font-bold text-lg text-slate-900 mb-2">
-                            {customer.name}
+                          <div className="flex items-start justify-between gap-3 mb-2">
+                            <div className="font-bold text-lg text-slate-900 min-w-0 truncate">
+                              {customer.name}
+                            </div>
+                            <div className="shrink-0 px-2 py-1 rounded-lg bg-slate-100 text-slate-600 text-xs font-semibold">
+                              {getCustomerOrderCount(customer.id)}
+                            </div>
                           </div>
                           
                           {customer.companyName && (
@@ -1595,15 +1772,7 @@ function POSContent() {
                         </button>
                       ))}
                     
-                    {customers.filter(customer => {
-                      const searchLower = customerSearchQuery.toLowerCase()
-                      return (
-                        customer.name.toLowerCase().includes(searchLower) ||
-                        customer.companyName?.toLowerCase().includes(searchLower) ||
-                        customer.location?.toLowerCase().includes(searchLower) ||
-                        customer.region.toLowerCase().includes(searchLower)
-                      )
-                    }).length === 0 && (
+                    {visibleCustomers.length === 0 && (
                       <div className="col-span-full text-center py-12">
                         <p className="text-xl text-slate-500 mb-4">No customers found</p>
                         <button
@@ -1617,6 +1786,59 @@ function POSContent() {
                   </div>
                 )}
               </div>
+
+              {showCustomerKeyboard && (
+                <div className="border-t border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-semibold text-slate-700">
+                      Klant zoeken (letters only)
+                    </p>
+                    <button
+                      onClick={() => setShowCustomerKeyboard(false)}
+                      className="px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 text-sm font-medium"
+                    >
+                      Sluiten
+                    </button>
+                  </div>
+
+                  <div className="space-y-2">
+                    {CUSTOMER_KEYBOARD_ROWS.map((row) => (
+                      <div key={row} className="flex justify-center gap-2">
+                        {row.split('').map((letter) => (
+                          <button
+                            key={letter}
+                            onClick={() => handleCustomerKeyboardKey(letter)}
+                            className="min-w-[54px] px-4 py-3 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 text-slate-800 font-bold text-lg transition-all"
+                          >
+                            {letter}
+                          </button>
+                        ))}
+                      </div>
+                    ))}
+
+                    <div className="flex justify-center gap-2 pt-1">
+                      <button
+                        onClick={() => handleCustomerKeyboardKey('SPACE')}
+                        className="min-w-[180px] px-6 py-3 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 text-slate-800 font-bold transition-all"
+                      >
+                        Spatie
+                      </button>
+                      <button
+                        onClick={() => handleCustomerKeyboardKey('BACKSPACE')}
+                        className="px-6 py-3 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 text-slate-800 font-bold transition-all"
+                      >
+                        Backspace
+                      </button>
+                      <button
+                        onClick={() => handleCustomerKeyboardKey('CLEAR')}
+                        className="px-6 py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold transition-all"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
