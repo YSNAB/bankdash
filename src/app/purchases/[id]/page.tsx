@@ -10,6 +10,12 @@ interface Supplier {
   name: string
 }
 
+interface AppUser {
+  id: string
+  username: string
+  name: string | null
+}
+
 interface Product {
   id: number
   name: string
@@ -39,6 +45,7 @@ interface PurchaseDetail {
 interface Purchase {
   id: number
   supplierId: number
+  createdByUserId?: string | null
   supplier: Supplier
   date: string
   purchaseDetails: PurchaseDetail[]
@@ -50,6 +57,7 @@ export default function EditPurchasePage() {
   const purchaseId = params.id as string
   
   const [purchase, setPurchase] = useState<Purchase | null>(null)
+  const [usersById, setUsersById] = useState<Record<string, string>>({})
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [supplierId, setSupplierId] = useState('')
@@ -70,6 +78,7 @@ export default function EditPurchasePage() {
     
     fetchPurchase()
     fetchSuppliers()
+    fetchUsers()
     fetchProducts()
   }, [router, purchaseId])
 
@@ -113,6 +122,27 @@ export default function EditPurchasePage() {
     } catch (error) {
       console.error('Error fetching suppliers:', error)
     }
+  }
+
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch('/api/users')
+      if (response.ok) {
+        const data: AppUser[] = await response.json()
+        setUsersById(
+          Object.fromEntries(
+            data.map((user) => [user.id, (user.name?.trim() || user.username).trim()])
+          )
+        )
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error)
+    }
+  }
+
+  const getUserDisplayName = (userId?: string | null) => {
+    if (!userId) return '-'
+    return usersById[userId] || userId
   }
 
   const fetchProducts = async () => {
@@ -316,6 +346,15 @@ export default function EditPurchasePage() {
                   className="w-full px-4 py-3 bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white transition-all shadow-sm"
                   required
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Added By
+                </label>
+                <div className="w-full px-4 py-3 bg-slate-100/80 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white shadow-sm">
+                  {getUserDisplayName(purchase?.createdByUserId)}
+                </div>
               </div>
             </div>
           </div>

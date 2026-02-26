@@ -12,6 +12,12 @@ interface Customer {
   name: string
 }
 
+interface AppUser {
+  id: string
+  username: string
+  name: string | null
+}
+
 interface Product {
   id: number
   name: string
@@ -41,6 +47,7 @@ function OrdersContent() {
   const searchParams = useSearchParams()
   const [orders, setOrders] = useState<Order[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
+  const [usersById, setUsersById] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(true)
   const [deleting, setDeleting] = useState<number | null>(null)
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('')
@@ -58,6 +65,7 @@ function OrdersContent() {
     
     fetchOrders()
     fetchCustomers()
+    fetchUsers()
   }, [router, searchParams])
 
   // Separate effect to set customer from URL after customers are loaded
@@ -96,6 +104,27 @@ function OrdersContent() {
     } catch (error) {
       console.error('Error fetching customers:', error)
     }
+  }
+
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch('/api/users')
+      if (response.ok) {
+        const data: AppUser[] = await response.json()
+        setUsersById(
+          Object.fromEntries(
+            data.map((user) => [user.id, (user.name?.trim() || user.username).trim()])
+          )
+        )
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error)
+    }
+  }
+
+  const getUserDisplayName = (userId?: string | null) => {
+    if (!userId) return '-'
+    return usersById[userId] || userId
   }
 
   const handleLogout = () => {
@@ -374,8 +403,8 @@ function OrdersContent() {
                           {order.isPosOrder ? 'POS' : 'Backoffice'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-xs font-mono text-slate-700 dark:text-slate-300">
-                        {order.createdByUserId || '-'}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-slate-300">
+                        {getUserDisplayName(order.createdByUserId)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-white">
                         <span className={`px-3 py-1.5 rounded-xl text-xs font-semibold shadow-sm ${
