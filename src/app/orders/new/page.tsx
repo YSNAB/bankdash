@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { formatPrice } from '@/lib/formatPrice'
 import { requireAdmin } from '@/lib/auth'
+import ProductCategoryHelperModal from '@/components/ProductCategoryHelperModal'
 
 interface Customer {
   id: number
@@ -14,6 +15,13 @@ interface Customer {
 interface Product {
   id: number
   name: string
+  fullname?: string | null
+  conditionRegion?: string | null
+  brandSerie?: string | null
+  model?: string | null
+  storage?: string | null
+  color?: string | null
+  sellingPrice?: number | null
   currentStock: number
 }
 
@@ -24,6 +32,16 @@ interface OrderItem {
   price: string
 }
 
+const createEmptyOrderItem = (): OrderItem => ({
+  productId: '',
+  productName: '',
+  quantity: '',
+  price: '',
+})
+
+const isOrderRowEmpty = (item: OrderItem) =>
+  !item.productId && !item.productName && !item.quantity && !item.price
+
 export default function NewOrderPage() {
   const router = useRouter()
   const [customers, setCustomers] = useState<Customer[]>([])
@@ -33,10 +51,11 @@ export default function NewOrderPage() {
   const [paymentType, setPaymentType] = useState('cash')
   const [paidAmount, setPaidAmount] = useState('')
   const [items, setItems] = useState<OrderItem[]>([
-    { productId: '', productName: '', quantity: '', price: '' }
+    createEmptyOrderItem()
   ])
   const [searchQuery, setSearchQuery] = useState<string[]>([''])
   const [filteredProducts, setFilteredProducts] = useState<Product[][]>([[]])
+  const [showCategoryHelper, setShowCategoryHelper] = useState(false)
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showNewCustomer, setShowNewCustomer] = useState(false)
@@ -106,16 +125,83 @@ export default function NewOrderPage() {
     }
   }
 
-  const addItem = () => {
-    setItems([...items, { productId: '', productName: '', quantity: '', price: '' }])
-    setSearchQuery([...searchQuery, ''])
-    setFilteredProducts([...filteredProducts, []])
+  const ensureTrailingEmptyOrderRow = (
+    nextItems: OrderItem[],
+    nextSearchQuery: string[],
+    nextFilteredProducts: Product[][]
+  ) => {
+    let itemsResult = [...nextItems]
+    let searchResult = [...nextSearchQuery]
+    let filteredResult = [...nextFilteredProducts]
+
+    if (itemsResult.length === 0) {
+      itemsResult = [createEmptyOrderItem()]
+      searchResult = ['']
+      filteredResult = [[]]
+      return { itemsResult, searchResult, filteredResult }
+    }
+
+    const lastItem = itemsResult[itemsResult.length - 1]
+    if (!isOrderRowEmpty(lastItem)) {
+      itemsResult.push(createEmptyOrderItem())
+      searchResult.push('')
+      filteredResult.push([])
+    }
+
+    return { itemsResult, searchResult, filteredResult }
+  }
+
+  const addItemFromCategoryHelper = (product: Product) => {
+    const insertIndex = items.findIndex(isOrderRowEmpty)
+    const targetIndex = insertIndex >= 0 ? insertIndex : items.length
+
+    const nextItems =
+      targetIndex < items.length
+        ? items.map((item, index) =>
+            index === targetIndex
+              ? {
+                  productId: product.id.toString(),
+                  productName: product.name,
+                  quantity: '',
+                  price: product.sellingPrice != null ? String(product.sellingPrice) : '',
+                }
+              : item
+          )
+        : [
+            ...items,
+            {
+              productId: product.id.toString(),
+              productName: product.name,
+              quantity: '',
+              price: product.sellingPrice != null ? String(product.sellingPrice) : '',
+            },
+          ]
+
+    const nextSearchQuery =
+      targetIndex < searchQuery.length
+        ? searchQuery.map((value, index) => (index === targetIndex ? product.name : value))
+        : [...searchQuery, product.name]
+
+    const nextFilteredProducts =
+      targetIndex < filteredProducts.length
+        ? filteredProducts.map((value, index) => (index === targetIndex ? [] : value))
+        : [...filteredProducts, []]
+
+    const normalized = ensureTrailingEmptyOrderRow(nextItems, nextSearchQuery, nextFilteredProducts)
+    setItems(normalized.itemsResult)
+    setSearchQuery(normalized.searchResult)
+    setFilteredProducts(normalized.filteredResult)
+    setShowCategoryHelper(false)
   }
 
   const removeItem = (index: number) => {
-    setItems(items.filter((_, i) => i !== index))
-    setSearchQuery(searchQuery.filter((_, i) => i !== index))
-    setFilteredProducts(filteredProducts.filter((_, i) => i !== index))
+    const nextItems = items.filter((_, i) => i !== index)
+    const nextSearchQuery = searchQuery.filter((_, i) => i !== index)
+    const nextFilteredProducts = filteredProducts.filter((_, i) => i !== index)
+    const normalized = ensureTrailingEmptyOrderRow(nextItems, nextSearchQuery, nextFilteredProducts)
+    setItems(normalized.itemsResult)
+    setSearchQuery(normalized.searchResult)
+    setFilteredProducts(normalized.filteredResult)
   }
 
   const updateItem = (index: number, field: keyof OrderItem, value: string) => {
@@ -147,15 +233,24 @@ export default function NewOrderPage() {
   }
 
   const selectProduct = (index: number, product: Product) => {
-    updateItem(index, 'productId', product.id.toString())
-    updateItem(index, 'productName', product.name)
+    const nextItems = [...items]
+    nextItems[index] = {
+      ...nextItems[index],
+      productId: product.id.toString(),
+      productName: product.name,
+      price: nextItems[index].price || (product.sellingPrice != null ? String(product.sellingPrice) : ''),
+    }
+
     const newSearchQuery = [...searchQuery]
     newSearchQuery[index] = product.name
-    setSearchQuery(newSearchQuery)
-    
+
     const newFilteredProducts = [...filteredProducts]
     newFilteredProducts[index] = []
-    setFilteredProducts(newFilteredProducts)
+
+    const normalized = ensureTrailingEmptyOrderRow(nextItems, newSearchQuery, newFilteredProducts)
+    setItems(normalized.itemsResult)
+    setSearchQuery(normalized.searchResult)
+    setFilteredProducts(normalized.filteredResult)
   }
 
   const calculateSubtotal = () => {
@@ -579,27 +674,38 @@ export default function NewOrderPage() {
               </h2>
               <button
                 type="button"
-                onClick={addItem}
-                className="px-5 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 font-medium"
+                onClick={() => setShowCategoryHelper(true)}
+                className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 font-medium"
               >
-                + Add Item
+                Add item from category
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3">
+              <div className="hidden md:flex gap-4 items-center px-1">
+                <div className="flex-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Product
+                </div>
+                <div className="w-24 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Qty
+                </div>
+                <div className="w-32 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Price
+                </div>
+                <div className="h-10 w-10" />
+              </div>
+
               {items.map((item, index) => (
-                <div key={index} className="flex gap-4 items-end p-5 backdrop-blur-xl bg-white/40 dark:bg-slate-800/40 border border-white/30 dark:border-slate-700/30 rounded-2xl">
+                <div key={index} className="flex gap-4 items-center py-1">
                   <div className="flex-1 relative">
-                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                      Product *
-                    </label>
                     <input
                       type="text"
                       value={searchQuery[index]}
                       onChange={(e) => handleSearchChange(index, e.target.value)}
+                      aria-label={`Product row ${index + 1}`}
                       className="w-full px-3 py-2 bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white text-sm transition-all shadow-sm"
-                      placeholder="Search product..."
-                      required
+                      placeholder={index === items.length - 1 ? 'Search product...' : ''}
+                      required={!isOrderRowEmpty(item)}
                     />
                     {filteredProducts[index] && filteredProducts[index].length > 0 && (
                       <div className="absolute z-10 w-full mt-1 backdrop-blur-xl bg-white/95 dark:bg-slate-800/95 border border-white/20 dark:border-slate-700/50 rounded-xl shadow-2xl max-h-60 overflow-y-auto">
@@ -621,41 +727,40 @@ export default function NewOrderPage() {
                   </div>
 
                   <div className="w-24">
-                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                      Qty *
-                    </label>
                     <input
                       type="number"
                       value={item.quantity}
                       onChange={(e) => updateItem(index, 'quantity', e.target.value)}
+                      aria-label={`Quantity row ${index + 1}`}
                       className="w-full px-3 py-2 bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white text-sm transition-all shadow-sm"
                       min="1"
-                      required
+                      placeholder={index === items.length - 1 ? 'Qty' : ''}
+                      required={!isOrderRowEmpty(item)}
                     />
                   </div>
 
                   <div className="w-32">
-                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                      Price *
-                    </label>
                     <input
                       type="number"
                       step="0.01"
                       value={item.price}
                       onChange={(e) => updateItem(index, 'price', e.target.value)}
+                      aria-label={`Price row ${index + 1}`}
                       className="w-full px-3 py-2 bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white text-sm transition-all shadow-sm"
                       min="0"
-                      required
+                      placeholder={index === items.length - 1 ? 'Price' : ''}
+                      required={!isOrderRowEmpty(item)}
                     />
                   </div>
 
-                  {items.length > 1 && (
+                  {(items.length > 1 || !isOrderRowEmpty(item)) && (
                     <button
                       type="button"
                       onClick={() => removeItem(index)}
-                      className="px-4 py-2 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-medium transition-colors"
+                      className="h-10 w-10 shrink-0 rounded-xl border border-red-200 dark:border-red-800/50 bg-red-50/70 dark:bg-red-900/20 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 flex items-center justify-center transition-colors"
+                      aria-label="Remove row"
                     >
-                      Remove
+                      ×
                     </button>
                   )}
                 </div>
@@ -740,6 +845,14 @@ export default function NewOrderPage() {
           </div>
         </form>
       </main>
+
+      <ProductCategoryHelperModal
+        isOpen={showCategoryHelper}
+        title="Add Product by Categories (Order)"
+        products={products}
+        onClose={() => setShowCategoryHelper(false)}
+        onSelectProduct={addItemFromCategoryHelper}
+      />
     </div>
   )
 }
