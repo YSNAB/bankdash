@@ -18,6 +18,7 @@ export default function POSLogin() {
   const [pin, setPin] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true)
 
   useEffect(() => {
     fetchUsers()
@@ -30,11 +31,12 @@ export default function POSLogin() {
   }, [router])
 
   const fetchUsers = async () => {
+    setIsLoadingUsers(true)
     try {
       console.log('[POS Login] Fetching users...')
       const response = await fetch('/api/auth/users')
       console.log('[POS Login] Response status:', response.status)
-      
+
       if (response.ok) {
         const data = await response.json()
         console.log('[POS Login] Users loaded:', data.length, 'users')
@@ -43,16 +45,17 @@ export default function POSLogin() {
       } else {
         const errorData = await response.json()
         console.error('[POS Login] Failed to fetch users:', errorData)
-        setError('Failed to load users')
+        setError('Gebruikers laden is mislukt')
       }
     } catch (err) {
       console.error('[POS Login] Error fetching users:', err)
-      setError('Failed to load users')
+      setError('Gebruikers laden is mislukt')
+    } finally {
+      setIsLoadingUsers(false)
     }
   }
 
   const handleNumberClick = (number: string) => {
-    // No limit on PIN length - let users enter as many digits as needed
     setPin(pin + number)
     setError('')
   }
@@ -69,12 +72,12 @@ export default function POSLogin() {
 
   const handleLogin = async () => {
     if (!selectedUser) {
-      setError('Please select a user')
+      setError('Selecteer een gebruiker')
       return
     }
 
     if (pin.length < 4) {
-      setError('PIN must be at least 4 digits')
+      setError('PIN moet minimaal 4 cijfers zijn')
       return
     }
 
@@ -91,21 +94,19 @@ export default function POSLogin() {
       const data = await response.json()
 
       if (!response.ok) {
-        setError(data.error || 'Login failed')
+        setError(data.error || 'Inloggen mislukt')
         setPin('')
         setIsLoading(false)
         return
       }
 
-      // Store user data
       localStorage.setItem('user', JSON.stringify(data.user))
 
-      // Redirect to POS with persisted session link (restored from URL or localStorage)
       resolvePOSSessionId(new URLSearchParams(window.location.search))
       router.push('/pos')
     } catch (err) {
       console.error('Login error:', err)
-      setError('An error occurred. Please try again.')
+      setError('Er is een fout opgetreden. Probeer opnieuw.')
       setPin('')
       setIsLoading(false)
     }
@@ -113,7 +114,7 @@ export default function POSLogin() {
 
   const handleUserSelect = (user: User) => {
     if (user.isLocked) {
-      setError('This account is locked. Please try again later.')
+      setError('Dit account is vergrendeld. Probeer het later opnieuw.')
       return
     }
     setSelectedUser(user)
@@ -127,170 +128,180 @@ export default function POSLogin() {
     setError('')
   }
 
-  // Number pad buttons
   const numberButtons = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
-      <div className="w-full max-w-2xl p-8">
-        
+    <div className="h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      <div className="mx-auto h-full w-full max-w-6xl p-4 md:p-6">
         {!selectedUser ? (
-          // User Selection View
-          <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20">
-            <div className="mb-8 text-center">
-              <div className="inline-flex items-center justify-center w-20 h-20 mb-4 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg">
-                <span className="text-4xl">📱</span>
-              </div>
-              <h1 className="text-4xl font-bold text-white mb-2">PhoneBank POS</h1>
-              <p className="text-blue-200">Select your account to continue</p>
-            </div>
-
-            {error && (
-              <div className="mb-6 text-center text-red-300 bg-red-500/20 backdrop-blur-sm px-4 py-3 rounded-xl border border-red-400/50">
-                {error}
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              {users.length === 0 ? (
-                <div className="col-span-2 text-center py-12">
-                  <div className="text-blue-200 mb-2">No users with PIN configured</div>
-                  <div className="text-sm text-blue-300">
-                    Run: <code className="bg-slate-800 px-2 py-1 rounded">npx tsx scripts/add-user.ts</code>
-                  </div>
-                  <div className="text-xs text-blue-400 mt-2">
-                    Make sure to set a PIN when creating the user
+          <div className="flex h-full flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl">
+            <header className="shrink-0 border-b border-slate-200 bg-white/80 px-4 py-4 backdrop-blur md:px-6 md:py-5">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="min-w-0">
+                    <h1 className="truncate text-2xl font-bold text-slate-900 md:text-3xl">PhoneBank POS</h1>
+                    <p className="truncate text-sm text-slate-500 md:text-base">
+                      Selecteer je account om door te gaan
+                    </p>
                   </div>
                 </div>
-              ) : (
-                users.map((user) => (
-                  <button
-                    key={user.id}
-                    onClick={() => handleUserSelect(user)}
-                    disabled={user.isLocked}
-                    className={`
-                      relative p-6 rounded-2xl transition-all duration-200
-                      ${user.isLocked 
-                        ? 'bg-slate-800/50 cursor-not-allowed opacity-50' 
-                        : 'bg-white/10 hover:bg-white/20 hover:scale-105 active:scale-95'
-                      }
-                      border-2 ${user.isLocked ? 'border-slate-700' : 'border-white/20 hover:border-white/40'}
-                    `}
-                  >
-                    <div className="flex flex-col items-center space-y-3">
-                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-2xl font-bold text-white shadow-lg">
-                        {user.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <div className="font-semibold text-white text-lg">{user.name}</div>
-                        <div className="text-sm text-blue-200">{user.role}</div>
-                      </div>
-                      {user.isLocked && (
-                        <div className="absolute top-3 right-3">
-                          <span className="text-xl">🔒</span>
-                        </div>
-                      )}
-                    </div>
-                  </button>
-                ))
-              )}
-            </div>
 
-            <div className="text-center">
-              <button
-                onClick={() => router.push('/')}
-                className="text-blue-200 hover:text-white transition-colors text-sm"
-              >
-                ← Admin Login
-              </button>
+              </div>
+            </header>
+
+            <div className="flex flex-1 min-h-0 flex-col p-4 md:p-6">
+              {error && (
+                <div className="mb-4 shrink-0 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-center text-sm text-red-700">
+                  {error}
+                </div>
+              )}
+
+              <div className="min-h-0 flex-1 overflow-hidden">
+                <div className="grid content-start grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+                  {isLoadingUsers ? (
+                    <div className="col-span-full flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-6 text-center text-slate-500">
+                      Gebruikers worden geladen...
+                    </div>
+                  ) : users.length === 0 ? (
+                    <div className="col-span-full flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-6 text-center text-slate-500">
+                      Geen gebruikers beschikbaar
+                    </div>
+                  ) : (
+                    users.map((user) => (
+                      <button
+                        key={user.id}
+                        onClick={() => handleUserSelect(user)}
+                        disabled={user.isLocked}
+                        className={`relative flex h-28 flex-col items-center justify-center rounded-2xl border p-3 text-center transition-all md:h-32 ${
+                          user.isLocked
+                            ? 'cursor-not-allowed border-slate-200 bg-slate-100 opacity-60'
+                            : 'border-slate-200 bg-white hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-50 active:translate-y-0'
+                        }`}
+                      >
+                        <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-xl font-bold text-white shadow-sm md:h-16 md:w-16 md:text-2xl">
+                          {user.name.charAt(0).toUpperCase()}
+                        </div>
+
+                        <div className="min-w-0">
+                          <div className="truncate text-base font-semibold text-slate-900 md:text-lg">{user.name}</div>
+                          <div className="text-xs uppercase tracking-wide text-slate-500 md:text-sm">{user.role}</div>
+                        </div>
+
+                        {user.isLocked && (
+                          <div className="absolute right-2 top-2 rounded-full bg-slate-200 px-2 py-1 text-xs font-semibold text-slate-600">
+                            Vergrendeld
+                          </div>
+                        )}
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         ) : (
-          // PIN Entry View
-          <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20">
-            <button
-              onClick={handleBack}
-              className="mb-6 text-blue-200 hover:text-white transition-colors flex items-center gap-2"
-            >
-              ← Back
-            </button>
-
-            <div className="mb-8 text-center">
-              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-3xl font-bold text-white shadow-lg">
-                {selectedUser.name.charAt(0).toUpperCase()}
-              </div>
-              <h2 className="text-3xl font-bold text-white mb-1">{selectedUser.name}</h2>
-              <p className="text-blue-200">Enter your PIN</p>
-            </div>
-
-            {/* PIN Display */}
-            <div className="mb-8 flex justify-center items-center gap-4">
-              <div className="flex gap-2">
-                {pin.split('').map((_, i) => (
-                  <div
-                    key={i}
-                    className="w-12 h-12 rounded-xl bg-blue-500 border-2 border-blue-400 flex items-center justify-center text-2xl font-bold text-white transition-all animate-in"
-                  >
-                    ●
-                  </div>
-                ))}
-                {pin.length === 0 && (
-                  <div className="text-blue-200 text-lg">
-                    Enter your PIN
-                  </div>
-                )}
-              </div>
-              {pin.length > 0 && (
-                <div className="text-blue-200 text-sm font-medium">
-                  {pin.length} digit{pin.length !== 1 ? 's' : ''}
-                </div>
-              )}
-            </div>
-
-            {error && (
-              <div className="mb-6 text-center text-red-300 bg-red-500/20 backdrop-blur-sm px-4 py-3 rounded-xl border border-red-400/50">
-                {error}
-              </div>
-            )}
-
-            {/* Number Pad */}
-            <div className="grid grid-cols-3 gap-4 mb-6">
-              {numberButtons.map((num) => (
+          <div className="flex h-full flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl">
+            <header className="shrink-0 border-b border-slate-200 bg-white/80 px-4 py-4 backdrop-blur md:px-6">
+              <div className="flex items-center justify-between gap-3">
                 <button
-                  key={num}
-                  onClick={() => handleNumberClick(num)}
-                  className="h-16 bg-white/10 hover:bg-white/20 border-2 border-white/20 hover:border-white/40 rounded-2xl text-2xl font-bold text-white transition-all hover:scale-105 active:scale-95"
-                  disabled={isLoading}
+                  onClick={handleBack}
+                  className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:border-slate-400 hover:text-slate-900"
                 >
-                  {num}
+                  Terug
                 </button>
-              ))}
-            </div>
 
-            {/* Action Buttons */}
-            <div className="grid grid-cols-3 gap-4">
-              <button
-                onClick={handleBackspace}
-                className="h-14 bg-orange-500/20 hover:bg-orange-500/30 border-2 border-orange-400/50 hover:border-orange-400 rounded-2xl font-semibold text-orange-200 transition-all hover:scale-105 active:scale-95"
-                disabled={isLoading || pin.length === 0}
-              >
-                ← Delete
-              </button>
-              <button
-                onClick={handleClear}
-                className="h-14 bg-red-500/20 hover:bg-red-500/30 border-2 border-red-400/50 hover:border-red-400 rounded-2xl font-semibold text-red-200 transition-all hover:scale-105 active:scale-95"
-                disabled={isLoading || pin.length === 0}
-              >
-                Clear
-              </button>
-              <button
-                onClick={handleLogin}
-                className="h-14 bg-green-500 hover:bg-green-600 border-2 border-green-400 rounded-2xl font-bold text-white shadow-lg transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isLoading || pin.length < 4}
-              >
-                {isLoading ? '...' : '✓ Login'}
-              </button>
-            </div>
+                <div className="text-right">
+                  <div className="text-sm text-slate-500">PIN login</div>
+                  <div className="text-lg font-semibold text-slate-900">{selectedUser.name}</div>
+                </div>
+              </div>
+            </header>
+
+            <main className="min-h-0 flex-1 overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4 md:p-6">
+              <div className="grid h-full min-h-0 grid-rows-[auto_1fr] gap-4 md:grid-cols-[minmax(0,1fr)_420px] md:grid-rows-[1fr] md:gap-6">
+                <section className="flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:justify-center md:p-6">
+                  <div className="text-center">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-2xl font-bold text-white shadow-sm md:h-20 md:w-20 md:text-3xl">
+                      {selectedUser.name.charAt(0).toUpperCase()}
+                    </div>
+                    <h2 className="mb-1 text-2xl font-bold text-slate-900 md:text-3xl">{selectedUser.name}</h2>
+                    <p className="text-sm text-slate-500 md:text-base">Voer je pincode in</p>
+                  </div>
+
+                  <div className="mt-5 flex min-h-[76px] flex-col items-center justify-center gap-2 md:mt-8 md:min-h-[90px]">
+                    <div className="flex flex-wrap items-center justify-center gap-2">
+                      {pin.length === 0 ? (
+                        <div className="text-base text-slate-400 md:text-lg">Pincode invoeren</div>
+                      ) : (
+                        pin.split('').map((_, i) => (
+                          <div
+                            key={i}
+                            className="flex h-10 w-10 items-center justify-center rounded-xl border-2 border-blue-200 bg-blue-500 text-xl font-bold text-white md:h-12 md:w-12"
+                          >
+                            *
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    <div className="h-5 text-xs font-medium text-slate-500 md:text-sm">
+                      {pin.length > 0 ? `${pin.length} cijfer${pin.length !== 1 ? 's' : ''}` : ''}
+                    </div>
+                  </div>
+
+                  <div className="mt-3 min-h-[48px] md:mt-4">
+                    {error && (
+                      <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-center text-sm text-red-700">
+                        {error}
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                <section className="flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+                  <div className="grid grid-cols-3 gap-3 md:gap-4">
+                    {numberButtons.map((num) => (
+                      <button
+                        key={num}
+                        onClick={() => handleNumberClick(num)}
+                        className="h-14 rounded-2xl border border-slate-200 bg-slate-50 text-xl font-bold text-slate-900 transition-all hover:border-blue-300 hover:bg-blue-50 active:scale-[0.98] md:h-16 md:text-2xl"
+                        disabled={isLoading}
+                      >
+                        {num}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-3 gap-3 md:mt-5 md:gap-4">
+                    <button
+                      onClick={handleBackspace}
+                      className="h-12 rounded-2xl border border-orange-200 bg-orange-50 text-sm font-semibold text-orange-700 transition-colors hover:bg-orange-100 disabled:cursor-not-allowed disabled:opacity-50 md:h-14 md:text-base"
+                      disabled={isLoading || pin.length === 0}
+                    >
+                      Verwijder
+                    </button>
+                    <button
+                      onClick={handleClear}
+                      className="h-12 rounded-2xl border border-red-200 bg-red-50 text-sm font-semibold text-red-700 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50 md:h-14 md:text-base"
+                      disabled={isLoading || pin.length === 0}
+                    >
+                      Wis
+                    </button>
+                    <button
+                      onClick={handleLogin}
+                      className="h-12 rounded-2xl border border-green-500 bg-green-500 text-sm font-bold text-white shadow-sm transition-colors hover:bg-green-600 disabled:cursor-not-allowed disabled:opacity-50 md:h-14 md:text-base"
+                      disabled={isLoading || pin.length < 4}
+                    >
+                      {isLoading ? '...' : 'Inloggen'}
+                    </button>
+                  </div>
+
+                  <div className="mt-4 text-center text-xs text-slate-400 md:mt-5">
+                    Gebruik je persoonlijke pincode om door te gaan
+                  </div>
+                </section>
+              </div>
+            </main>
           </div>
         )}
       </div>
