@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { requireAdmin } from '@/lib/auth'
 import * as XLSX from 'xlsx'
@@ -15,6 +15,7 @@ interface Product {
   model: string | null
   storage: string | null
   color: string | null
+  sellingPrice: number | null
   currentStock: number
   minimalStock: number | null
   avgPurchasePrice: number
@@ -43,17 +44,12 @@ const getUniqueOptions = (values: Array<string | null | undefined>): string[] =>
 
 export default function ProductsPage() {
   const router = useRouter()
+  const importInputRef = useRef<HTMLInputElement | null>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [showAddForm, setShowAddForm] = useState(false)
-  const [formData, setFormData] = useState({
-    name: '',
-    ean: '',
-    stock: '',
-    minimalStock: '',
-  })
-  const [error, setError] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isImporting, setIsImporting] = useState(false)
+  const [importMessage, setImportMessage] = useState('')
+  const [importError, setImportError] = useState('')
   const [conditionRegionFilter, setConditionRegionFilter] = useState('')
   const [brandSerieFilter, setBrandSerieFilter] = useState('')
   const [modelFilter, setModelFilter] = useState('')
@@ -85,39 +81,6 @@ export default function ProductsPage() {
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setIsSubmitting(true)
-
-    try {
-      const response = await fetch('/api/products', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        setError(data.error || 'Failed to add product')
-        setIsSubmitting(false)
-        return
-      }
-
-      // Reset form and refresh products
-      setFormData({ name: '', ean: '', stock: '', minimalStock: '' })
-      setShowAddForm(false)
-      fetchProducts()
-    } catch (err) {
-      setError('An error occurred. Please try again.')
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
   const handleLogout = () => {
     localStorage.removeItem('user')
     router.push('/')
@@ -129,7 +92,14 @@ export default function ProductsPage() {
       'ID': product.id,
       'Name': product.name,
       'EAN': product.ean || '',
+      'Condition Region': product.conditionRegion || '',
+      'Brand Serie': product.brandSerie || '',
+      'Model': product.model || '',
+      'Storage': product.storage || '',
+      'Color': product.color || '',
       'Current Stock': product.currentStock,
+      'Min Stock': product.minimalStock ?? '',
+      'Selling Price': product.sellingPrice != null ? formatPrice(product.sellingPrice) : '',
       'Avg Purchase Price': formatPrice(product.avgPurchasePrice),
     }))
 
@@ -154,6 +124,149 @@ export default function ProductsPage() {
     setModelFilter('')
     setStorageFilter('')
     setColorFilter('')
+  }
+
+  const parseExcelPrice = (value: unknown): string => {
+    if (value === null || value === undefined || value === '') return ''
+    if (typeof value === 'number') return String(value)
+
+    let input = String(value).trim()
+    if (!input) return ''
+
+    input = input.replace(/[^\d,.\-]/g, '')
+
+    const hasComma = input.includes(',')
+    const hasDot = input.includes('.')
+
+    if (hasComma && hasDot) {
+      const lastComma = input.lastIndexOf(',')
+      const lastDot = input.lastIndexOf('.')
+      if (lastComma > lastDot) {
+        input = input.replace(/\./g, '').replace(',', '.')
+      } else {
+        input = input.replace(/,/g, '')
+      }
+    } else if (hasComma) {
+      input = input.replace(',', '.')
+    }
+
+    const parsed = Number(input)
+    return Number.isFinite(parsed) ? String(parsed) : ''
+  }
+
+  const normalizeCellText = (value: unknown): string => {
+    if (value === null || value === undefined) return ''
+    return String(value).trim()
+  }
+
+  const parseExcelInteger = (value: unknown): string => {
+    const text = normalizeCellText(value)
+    if (!text) return ''
+    const parsed = parseInt(text, 10)
+    return Number.isFinite(parsed) ? String(parsed) : ''
+  }
+
+  const handleImportExcel = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setImportError('')
+    setImportMessage('')
+    setIsImporting(true)
+
+    try {
+      const buffer = await file.arrayBuffer()
+      const workbook = XLSX.read(buffer, { type: 'array' })
+      const sheetName = workbook.SheetNames[0]
+      const sheet = workbook.Sheets[sheetName]
+
+      if (!sheet) {
+        setImportError('No sheet found in the selected file.')
+        return
+      }
+
+      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '' })
+
+      if (rows.length === 0) {
+        setImportError('The selected Excel file is empty.')
+        return
+      }
+
+      let updated = 0
+      let skipped = 0
+      const rowErrors: string[] = []
+
+      for (let index = 0; index < rows.length; index++) {
+        const row = rows[index]
+        const rowNumber = index + 2
+
+        const rawId = row['ID']
+        const idNumber = typeof rawId === 'number' ? rawId : parseInt(String(rawId || ''), 10)
+
+        if (!Number.isFinite(idNumber)) {
+          skipped++
+          rowErrors.push(`Row ${rowNumber}: missing/invalid ID`)
+          continue
+        }
+
+        const payload = {
+          name: normalizeCellText(row['Name']),
+          ean: normalizeCellText(row['EAN']),
+          minimalStock: parseExcelInteger(row['Min Stock']),
+          sellingPrice: parseExcelPrice(row['Selling Price']),
+          conditionRegion: normalizeCellText(row['Condition Region']),
+          brandSerie: normalizeCellText(row['Brand Serie']),
+          model: normalizeCellText(row['Model']),
+          storage: normalizeCellText(row['Storage']),
+          color: normalizeCellText(row['Color']),
+        }
+
+        if (!payload.name) {
+          skipped++
+          rowErrors.push(`Row ${rowNumber}: Name is required`)
+          continue
+        }
+
+        const response = await fetch(`/api/products/${idNumber}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+
+        if (!response.ok) {
+          let errorMessage = 'Update failed'
+          try {
+            const errorBody = await response.json()
+            errorMessage = errorBody.error || errorMessage
+          } catch {
+            // ignore JSON parse errors
+          }
+          rowErrors.push(`Row ${rowNumber} (ID ${idNumber}): ${errorMessage}`)
+          continue
+        }
+
+        updated++
+      }
+
+      await fetchProducts()
+
+      const summary = [`Updated ${updated} product(s)`]
+      if (skipped > 0) summary.push(`${skipped} skipped`)
+      if (rowErrors.length > 0) summary.push(`${rowErrors.length} issue(s)`)
+      setImportMessage(summary.join(' • '))
+
+      if (rowErrors.length > 0) {
+        setImportError(rowErrors.slice(0, 5).join(' | '))
+      }
+    } catch (error) {
+      console.error('Import error:', error)
+      setImportError('Failed to import Excel file.')
+    } finally {
+      setIsImporting(false)
+      if (importInputRef.current) {
+        importInputRef.current.value = ''
+      }
+    }
   }
 
   const conditionScopedProducts = products.filter((product) =>
@@ -234,6 +347,20 @@ export default function ProductsPage() {
             </span>
           </h2>
           <div className="flex gap-3">
+            <input
+              ref={importInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              onChange={handleImportExcel}
+            />
+            <button
+              onClick={() => importInputRef.current?.click()}
+              disabled={isImporting}
+              className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isImporting ? 'Importing...' : 'Import Excel'}
+            </button>
             <button
               onClick={exportToExcel}
               className="px-5 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 font-medium"
@@ -241,13 +368,28 @@ export default function ProductsPage() {
               📊 Export Excel
             </button>
             <button
-              onClick={() => setShowAddForm(!showAddForm)}
+              onClick={() => router.push('/products/new')}
               className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 font-medium"
             >
-              {showAddForm ? '✕ Cancel' : '+ Add Product'}
+              + Add Product
             </button>
           </div>
         </div>
+
+        {(importMessage || importError) && (
+          <div className="mb-6 space-y-3">
+            {importMessage && (
+              <div className="backdrop-blur-xl bg-green-50/70 dark:bg-green-900/30 border border-green-200/50 dark:border-green-800/50 rounded-2xl p-4 shadow-lg">
+                <p className="text-green-800 dark:text-green-200 text-sm font-medium">{importMessage}</p>
+              </div>
+            )}
+            {importError && (
+              <div className="backdrop-blur-xl bg-amber-50/70 dark:bg-amber-900/30 border border-amber-200/50 dark:border-amber-800/50 rounded-2xl p-4 shadow-lg">
+                <p className="text-amber-800 dark:text-amber-200 text-sm font-medium">{importError}</p>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="backdrop-blur-xl bg-white/70 dark:bg-slate-900/70 border border-white/20 dark:border-slate-800/50 shadow-xl rounded-2xl p-4 mb-6">
           <div className="flex flex-col gap-4">
@@ -368,95 +510,6 @@ export default function ProductsPage() {
           </div>
         </div>
 
-        {showAddForm && (
-          <div className="backdrop-blur-xl bg-white/70 dark:bg-slate-900/70 border border-white/20 dark:border-slate-800/50 shadow-2xl rounded-3xl p-8 mb-8">
-            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6">
-              Add New Product
-            </h3>
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div>
-                <label
-                  htmlFor="name"
-                  className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
-                >
-                  Product Name *
-                </label>
-                <input
-                  id="name"
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-3 bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white transition-all shadow-sm"
-                  required
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="ean"
-                  className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
-                >
-                  EAN Code
-                </label>
-                <input
-                  id="ean"
-                  type="text"
-                  value={formData.ean}
-                  onChange={(e) => setFormData({ ...formData, ean: e.target.value })}
-                  className="w-full px-4 py-3 bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white transition-all shadow-sm"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="stock"
-                  className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
-                >
-                  Stock *
-                </label>
-                <input
-                  id="stock"
-                  type="number"
-                  value={formData.stock}
-                  onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                  className="w-full px-4 py-3 bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white transition-all shadow-sm"
-                  required
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="minimalStock"
-                  className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
-                >
-                  Minimal Stock
-                </label>
-                <input
-                  id="minimalStock"
-                  type="number"
-                  value={formData.minimalStock}
-                  onChange={(e) => setFormData({ ...formData, minimalStock: e.target.value })}
-                  className="w-full px-4 py-3 bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white transition-all shadow-sm"
-                  placeholder="Optional minimum stock level"
-                />
-              </div>
-
-              {error && (
-                <div className="text-sm text-red-600 dark:text-red-400 bg-red-50/50 dark:bg-red-900/20 px-4 py-3 rounded-xl backdrop-blur-xl">
-                  {error}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? 'Adding...' : 'Add Product'}
-              </button>
-            </form>
-          </div>
-        )}
 
         <div className="backdrop-blur-xl bg-white/70 dark:bg-slate-900/70 border border-white/20 dark:border-slate-800/50 shadow-2xl rounded-3xl overflow-hidden">
           {products.length === 0 ? (
@@ -478,14 +531,14 @@ export default function ProductsPage() {
                     <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                       Name
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                      EAN
-                    </th>
                     <th className="px-6 py-4 text-right text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                       Current Stock
                     </th>
                     <th className="px-6 py-4 text-right text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                       Min Stock
+                    </th>
+                    <th className="px-6 py-4 text-right text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                      Selling Price
                     </th>
                     <th className="px-6 py-4 text-right text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                       Avg Purchase Price
@@ -505,14 +558,14 @@ export default function ProductsPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white">
                         {product.name}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
-                        {product.ean || '-'}
-                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-slate-900 dark:text-white">
                         {product.currentStock}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-slate-600 dark:text-slate-400">
                         {product.minimalStock || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-blue-700 dark:text-blue-400">
+                        {product.sellingPrice != null ? formatPrice(product.sellingPrice) : '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-green-700 dark:text-green-400">
                         {formatPrice(product.avgPurchasePrice)}
