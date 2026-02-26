@@ -613,7 +613,7 @@ function POSContent() {
         customerId: selectedCustomerId,
         date: new Date().toISOString(),
         paymentType,
-        paidAmount: paidAmount > 0 ? paidAmount : (paymentType === 'cash' ? calculateFinalTotal() : 0),
+        paidAmount,
         createdByUserId: currentUser?.id ?? null,
         isPosOrder: true,
         items: cart.map(item => ({
