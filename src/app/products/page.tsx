@@ -10,9 +10,35 @@ interface Product {
   id: number
   name: string
   ean: string | null
+  conditionRegion: string | null
+  brandSerie: string | null
+  model: string | null
+  storage: string | null
+  color: string | null
   currentStock: number
   minimalStock: number | null
   avgPurchasePrice: number
+}
+
+const normalizeFilterValue = (value: string | null | undefined): string | null => {
+  const normalized = value?.trim()
+  return normalized ? normalized : null
+}
+
+const matchesFilter = (
+  value: string | null | undefined,
+  selected: string
+): boolean => {
+  if (!selected) return true
+  return normalizeFilterValue(value) === selected
+}
+
+const getUniqueOptions = (values: Array<string | null | undefined>): string[] => {
+  return [...new Set(
+    values
+      .map(normalizeFilterValue)
+      .filter((value): value is string => Boolean(value))
+  )].sort((a, b) => a.localeCompare(b))
 }
 
 export default function ProductsPage() {
@@ -28,6 +54,11 @@ export default function ProductsPage() {
   })
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [conditionRegionFilter, setConditionRegionFilter] = useState('')
+  const [brandSerieFilter, setBrandSerieFilter] = useState('')
+  const [modelFilter, setModelFilter] = useState('')
+  const [storageFilter, setStorageFilter] = useState('')
+  const [colorFilter, setColorFilter] = useState('')
 
   useEffect(() => {
     // Check if user is admin
@@ -117,6 +148,43 @@ export default function ProductsPage() {
     XLSX.writeFile(wb, filename)
   }
 
+  const resetFilters = () => {
+    setConditionRegionFilter('')
+    setBrandSerieFilter('')
+    setModelFilter('')
+    setStorageFilter('')
+    setColorFilter('')
+  }
+
+  const conditionScopedProducts = products.filter((product) =>
+    matchesFilter(product.conditionRegion, conditionRegionFilter)
+  )
+
+  const brandScopedProducts = conditionScopedProducts.filter((product) =>
+    matchesFilter(product.brandSerie, brandSerieFilter)
+  )
+
+  const modelScopedProducts = brandScopedProducts.filter((product) =>
+    matchesFilter(product.model, modelFilter)
+  )
+
+  const storageScopedProducts = modelScopedProducts.filter((product) =>
+    matchesFilter(product.storage, storageFilter)
+  )
+
+  const filteredProducts = storageScopedProducts.filter((product) =>
+    matchesFilter(product.color, colorFilter)
+  )
+
+  const conditionRegionOptions = getUniqueOptions(products.map((product) => product.conditionRegion))
+  const brandSerieOptions = getUniqueOptions(conditionScopedProducts.map((product) => product.brandSerie))
+  const modelOptions = getUniqueOptions(brandScopedProducts.map((product) => product.model))
+  const storageOptions = getUniqueOptions(modelScopedProducts.map((product) => product.storage))
+  const colorOptions = getUniqueOptions(storageScopedProducts.map((product) => product.color))
+  const hasActiveFilters = Boolean(
+    conditionRegionFilter || brandSerieFilter || modelFilter || storageFilter || colorFilter
+  )
+
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950">
@@ -160,7 +228,10 @@ export default function ProductsPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="mb-8 flex justify-between items-center">
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Product List <span className="text-slate-500 dark:text-slate-400 text-lg">({products.length})</span>
+            Product List{' '}
+            <span className="text-slate-500 dark:text-slate-400 text-lg">
+              ({filteredProducts.length}{hasActiveFilters ? ` / ${products.length}` : ''})
+            </span>
           </h2>
           <div className="flex gap-3">
             <button
@@ -175,6 +246,125 @@ export default function ProductsPage() {
             >
               {showAddForm ? '✕ Cancel' : '+ Add Product'}
             </button>
+          </div>
+        </div>
+
+        <div className="backdrop-blur-xl bg-white/70 dark:bg-slate-900/70 border border-white/20 dark:border-slate-800/50 shadow-xl rounded-2xl p-4 mb-6">
+          <div className="flex flex-col gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-3">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400 mb-1">
+                  Condition
+                </label>
+                <select
+                  value={conditionRegionFilter}
+                  onChange={(e) => {
+                    setConditionRegionFilter(e.target.value)
+                    setBrandSerieFilter('')
+                    setModelFilter('')
+                    setStorageFilter('')
+                    setColorFilter('')
+                  }}
+                  className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2.5 text-sm text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                >
+                  <option value="">All conditions</option>
+                  {conditionRegionOptions.map((option) => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400 mb-1">
+                  Brand
+                </label>
+                <select
+                  value={brandSerieFilter}
+                  onChange={(e) => {
+                    setBrandSerieFilter(e.target.value)
+                    setModelFilter('')
+                    setStorageFilter('')
+                    setColorFilter('')
+                  }}
+                  disabled={brandSerieOptions.length === 0}
+                  className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2.5 text-sm text-slate-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                >
+                  <option value="">All brands</option>
+                  {brandSerieOptions.map((option) => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400 mb-1">
+                  Model
+                </label>
+                <select
+                  value={modelFilter}
+                  onChange={(e) => {
+                    setModelFilter(e.target.value)
+                    setStorageFilter('')
+                    setColorFilter('')
+                  }}
+                  disabled={modelOptions.length === 0}
+                  className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2.5 text-sm text-slate-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                >
+                  <option value="">All models</option>
+                  {modelOptions.map((option) => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400 mb-1">
+                  Storage
+                </label>
+                <select
+                  value={storageFilter}
+                  onChange={(e) => {
+                    setStorageFilter(e.target.value)
+                    setColorFilter('')
+                  }}
+                  disabled={storageOptions.length === 0}
+                  className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2.5 text-sm text-slate-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                >
+                  <option value="">All storage</option>
+                  {storageOptions.map((option) => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400 mb-1">
+                  Color
+                </label>
+                <select
+                  value={colorFilter}
+                  onChange={(e) => setColorFilter(e.target.value)}
+                  disabled={colorOptions.length === 0}
+                  className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2.5 text-sm text-slate-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                >
+                  <option value="">All colors</option>
+                  {colorOptions.map((option) => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col justify-end">
+                <button
+                  onClick={resetFilters}
+                  disabled={!hasActiveFilters}
+                  className="h-[42px] rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 text-sm font-medium text-slate-700 dark:text-slate-200 hover:border-slate-400 dark:hover:border-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Reset Filters
+                </button>
+              </div>
+            </div>
+
           </div>
         </div>
 
@@ -273,6 +463,10 @@ export default function ProductsPage() {
             <div className="p-12 text-center text-slate-500 dark:text-slate-400">
               No products yet. Add your first product to get started.
             </div>
+          ) : filteredProducts.length === 0 ? (
+            <div className="p-12 text-center text-slate-500 dark:text-slate-400">
+              No products match the current filters.
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-white/10 dark:divide-slate-800/50">
@@ -299,7 +493,7 @@ export default function ProductsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/10 dark:divide-slate-800/50">
-                  {products.map((product) => (
+                  {filteredProducts.map((product) => (
                     <tr 
                       key={product.id} 
                       onClick={() => router.push(`/products/${product.id}`)}
