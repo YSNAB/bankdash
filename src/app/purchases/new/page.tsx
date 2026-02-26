@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { requireAdmin } from '@/lib/auth'
+import { getUser, requireAdmin } from '@/lib/auth'
 import ProductCategoryHelperModal from '@/components/ProductCategoryHelperModal'
 
 interface Supplier {
@@ -273,12 +273,14 @@ export default function NewPurchasePage() {
     }
 
     try {
+      const currentUser = getUser()
       const response = await fetch('/api/purchases', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           supplierId,
           date,
+          createdByUserId: currentUser?.id ?? null,
           items: validItems,
         }),
       })

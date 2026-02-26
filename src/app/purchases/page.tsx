@@ -25,6 +25,7 @@ interface PurchaseDetail {
 
 interface Purchase {
   id: number
+  createdByUserId?: string | null
   date: string
   supplier: Supplier
   purchaseDetails: PurchaseDetail[]
@@ -169,6 +170,9 @@ export default function PurchasesPage() {
                     <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                       Supplier
                     </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                      Added By
+                    </th>
                     <th className="px-6 py-4 text-right text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                       Total
                     </th>
@@ -192,6 +196,9 @@ export default function PurchasesPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white">
                         {purchase.supplier.name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-xs font-mono text-slate-700 dark:text-slate-300">
+                        {purchase.createdByUserId || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-green-700 dark:text-green-400">
                         {calculateTotal(purchase.purchaseDetails)}

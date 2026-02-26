@@ -76,6 +76,7 @@ model Customer {
 model Purchase {
   id              Int              @id @default(autoincrement())
   supplierId      Int              @map("supplier_id")
+  createdByUserId String?          @map("created_by_user_id")
   date            DateTime         @db.Timestamptz(6)
   supplier        Supplier         @relation("SupplierToPurchase", fields: [supplierId], references: [id])
   purchaseDetails PurchaseDetail[] @relation("PurchaseToPurchaseDetail")
@@ -99,13 +100,15 @@ model PurchaseDetail {
 
 // Orders model (customer orders)
 model Order {
-  id          Int           @id @default(autoincrement())
-  customerId  Int           @map("customer_id")
-  date        DateTime      @db.Timestamptz(6)
-  paymentType String        @map("payment_type") // "cash" or "factuur"
-  paidAmount  Float         @default(0) @map("paid_amount")
-  customer    Customer      @relation("CustomerToOrder", fields: [customerId], references: [id])
-  orderDetails OrderDetail[] @relation("OrderToOrderDetail")
+  id              Int           @id @default(autoincrement())
+  customerId      Int           @map("customer_id")
+  createdByUserId String?       @map("created_by_user_id")
+  isPosOrder      Boolean       @default(false) @map("is_pos_order")
+  date            DateTime      @db.Timestamptz(6)
+  paymentType     String        @map("payment_type") // "cash" or "factuur"
+  paidAmount      Float         @default(0) @map("paid_amount")
+  customer        Customer      @relation("CustomerToOrder", fields: [customerId], references: [id])
+  orderDetails    OrderDetail[] @relation("OrderToOrderDetail")
 
   @@map("orders")
 }

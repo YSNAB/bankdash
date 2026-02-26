@@ -608,11 +608,14 @@ function POSContent() {
     setError('')
 
     try {
+      const currentUser = getUser()
       const orderData = {
         customerId: selectedCustomerId,
         date: new Date().toISOString(),
         paymentType,
         paidAmount: paidAmount > 0 ? paidAmount : (paymentType === 'cash' ? calculateFinalTotal() : 0),
+        createdByUserId: currentUser?.id ?? null,
+        isPosOrder: true,
         items: cart.map(item => ({
           productId: item.productId,
           quantity: item.quantity,

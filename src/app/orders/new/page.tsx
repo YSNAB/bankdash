@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { formatPrice } from '@/lib/formatPrice'
-import { requireAdmin } from '@/lib/auth'
+import { getUser, requireAdmin } from '@/lib/auth'
 import ProductCategoryHelperModal from '@/components/ProductCategoryHelperModal'
 
 interface Customer {
@@ -517,6 +517,7 @@ export default function NewOrderPage() {
     }
 
     try {
+      const currentUser = getUser()
       const response = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -525,6 +526,8 @@ export default function NewOrderPage() {
           date,
           paymentType,
           paidAmount: parseFloat(paidAmount) || 0,
+          createdByUserId: currentUser?.id ?? null,
+          isPosOrder: false,
           items: validItems,
         }),
       })

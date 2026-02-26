@@ -95,9 +95,18 @@ export async function DELETE(request: Request) {
 // POST create new order
 export async function POST(request: Request) {
   try {
-    const { customerId, date, paymentType, paidAmount, items } = await request.json()
+    const { customerId, date, paymentType, paidAmount, items, createdByUserId, isPosOrder } =
+      await request.json()
 
-    console.log('Creating order:', { customerId, date, paymentType, paidAmount, items })
+    console.log('Creating order:', {
+      customerId,
+      date,
+      paymentType,
+      paidAmount,
+      items,
+      createdByUserId,
+      isPosOrder,
+    })
 
     if (!customerId || !date || !paymentType || !items || items.length === 0) {
       return NextResponse.json(
@@ -112,6 +121,11 @@ export async function POST(request: Request) {
       const newOrder = await tx.order.create({
         data: {
           customerId: parseInt(customerId),
+          createdByUserId:
+            typeof createdByUserId === 'string' && createdByUserId.trim()
+              ? createdByUserId.trim()
+              : null,
+          isPosOrder: Boolean(isPosOrder),
           date: new Date(date),
           paymentType,
           paidAmount: paidAmount || 0,

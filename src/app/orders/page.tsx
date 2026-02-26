@@ -28,6 +28,8 @@ interface Order {
   id: number
   customerId: number
   customer: Customer
+  createdByUserId?: string | null
+  isPosOrder?: boolean
   date: string
   paymentType: string
   paidAmount: number
@@ -326,6 +328,12 @@ function OrdersContent() {
                       Customer
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                      Source
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                      Added By
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                       Payment
                     </th>
                     <th className="px-6 py-4 text-center text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
@@ -354,6 +362,20 @@ function OrdersContent() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white">
                         {order.customer.name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <span
+                          className={`px-3 py-1.5 rounded-xl text-xs font-semibold shadow-sm ${
+                            order.isPosOrder
+                              ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white'
+                              : 'bg-white/80 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
+                          }`}
+                        >
+                          {order.isPosOrder ? 'POS' : 'Backoffice'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-xs font-mono text-slate-700 dark:text-slate-300">
+                        {order.createdByUserId || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-white">
                         <span className={`px-3 py-1.5 rounded-xl text-xs font-semibold shadow-sm ${
