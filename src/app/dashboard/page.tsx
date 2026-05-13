@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { formatPrice } from '@/lib/formatPrice'
+import { requireAdmin } from '@/lib/auth'
 
 interface LowStockProduct {
   id: number
@@ -56,13 +57,13 @@ export default function DashboardPage() {
   const [chartType, setChartType] = useState<'revenue' | 'purchase' | 'profit'>('revenue')
 
   useEffect(() => {
-    // Check if user is logged in
-    const userData = localStorage.getItem('user')
-    if (!userData) {
-      router.push('/')
+    // Check if user is admin
+    try {
+      const user = requireAdmin()
+      setUser(user)
+    } catch {
       return
     }
-    setUser(JSON.parse(userData))
     fetchLowStockProducts()
     fetchRevenueData(revenueDays)
     fetchPurchaseData(revenueDays)

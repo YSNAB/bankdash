@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { requireAdmin } from '@/lib/auth'
 import { formatPrice } from '@/lib/formatPrice'
 
 interface CustomerStats {
@@ -21,9 +22,9 @@ export default function CustomersPage() {
   const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
-    const userData = localStorage.getItem('user')
-    if (!userData) {
-      router.push('/')
+    try {
+      requireAdmin()
+    } catch {
       return
     }
     

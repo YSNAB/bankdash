@@ -2,11 +2,18 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { requireAdmin } from '@/lib/auth'
 import { formatPrice } from '@/lib/formatPrice'
 
 interface Supplier {
   id: number
   name: string
+}
+
+interface AppUser {
+  id: string
+  username: string
+  name: string | null
 }
 
 interface Product {
@@ -24,6 +31,7 @@ interface PurchaseDetail {
 
 interface Purchase {
   id: number
+  createdByUserId?: string | null
   date: string
   supplier: Supplier
   purchaseDetails: PurchaseDetail[]
@@ -32,18 +40,20 @@ interface Purchase {
 export default function PurchasesPage() {
   const router = useRouter()
   const [purchases, setPurchases] = useState<Purchase[]>([])
+  const [usersById, setUsersById] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(true)
   const [deleting, setDeleting] = useState<number | null>(null)
 
   useEffect(() => {
-    // Check if user is logged in
-    const userData = localStorage.getItem('user')
-    if (!userData) {
-      router.push('/')
+    // Check if user is admin
+    try {
+      requireAdmin()
+    } catch {
       return
     }
     
     fetchPurchases()
+    fetchUsers()
   }, [router])
 
   const fetchPurchases = async () => {
@@ -58,6 +68,27 @@ export default function PurchasesPage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch('/api/users')
+      if (response.ok) {
+        const data: AppUser[] = await response.json()
+        setUsersById(
+          Object.fromEntries(
+            data.map((user) => [user.id, (user.name?.trim() || user.username).trim()])
+          )
+        )
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error)
+    }
+  }
+
+  const getUserDisplayName = (userId?: string | null) => {
+    if (!userId) return '-'
+    return usersById[userId] || userId
   }
 
   const handleLogout = () => {
@@ -168,6 +199,9 @@ export default function PurchasesPage() {
                     <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                       Supplier
                     </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                      Added By
+                    </th>
                     <th className="px-6 py-4 text-right text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                       Total
                     </th>
@@ -191,6 +225,9 @@ export default function PurchasesPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white">
                         {purchase.supplier.name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-slate-300">
+                        {getUserDisplayName(purchase.createdByUserId)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-green-700 dark:text-green-400">
                         {calculateTotal(purchase.purchaseDetails)}

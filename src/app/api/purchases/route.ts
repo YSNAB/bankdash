@@ -95,9 +95,9 @@ export async function DELETE(request: Request) {
 // POST create new purchase order
 export async function POST(request: Request) {
   try {
-    const { supplierId, date, items } = await request.json()
+    const { supplierId, date, items, createdByUserId } = await request.json()
 
-    console.log('Creating purchase:', { supplierId, date, items })
+    console.log('Creating purchase:', { supplierId, date, items, createdByUserId })
 
     if (!supplierId || !date || !items || items.length === 0) {
       return NextResponse.json(
@@ -112,6 +112,10 @@ export async function POST(request: Request) {
       const newPurchase = await tx.purchase.create({
         data: {
           supplierId: parseInt(supplierId),
+          createdByUserId:
+            typeof createdByUserId === 'string' && createdByUserId.trim()
+              ? createdByUserId.trim()
+              : null,
           date: new Date(date),
           purchaseDetails: {
             create: items.map((item: any) => ({

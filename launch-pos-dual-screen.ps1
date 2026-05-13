@@ -12,11 +12,11 @@
 try {
 
 # === CONFIGURATION ===
-$SESSION_ID  = "kassa-1"
+$SESSION_ID  = "kas1"
 $BASE_URL    = "http://192.168.1.74:3000"
 
-$URL_CASHIER  = "$BASE_URL/pos/cashier?session=$SESSION_ID"
-$URL_CUSTOMER = "$BASE_URL/pos/customer?session=$SESSION_ID"
+$URL_CASHIER  = "$BASE_URL/pos?sessie=$SESSION_ID"
+$URL_CUSTOMER = "$BASE_URL/pos/client?sessie=$SESSION_ID"
 
 # --- Locate Chrome ---
 $CHROME = $null
@@ -77,6 +77,30 @@ $s2 = $screen2.Bounds
 $cashierProfile  = Join-Path $env:TEMP "chrome-pos-cashier-$SESSION_ID"
 $customerProfile = Join-Path $env:TEMP "chrome-pos-customer-$SESSION_ID"
 
+# --- Write Chrome preferences to disable translate & password popups ---
+$chromePrefs = @'
+{
+  "translate_blocked_languages": ["nl","en","de","fr","ar","tr"],
+  "translate": {"enabled": false},
+  "credentials_enable_service": false,
+  "credentials_enable_autosignin": false,
+  "savenames": {"profile_names_old": 0},
+  "profile": {"password_manager_enabled": false}
+}
+'@
+
+foreach ($profileDir in @($cashierProfile, $customerProfile)) {
+    $defaultDir = Join-Path $profileDir "Default"
+    if (-not (Test-Path $defaultDir)) {
+        New-Item -ItemType Directory -Path $defaultDir -Force | Out-Null
+    }
+    $prefsFile = Join-Path $defaultDir "Preferences"
+    if (-not (Test-Path $prefsFile)) {
+        Set-Content -Path $prefsFile -Value $chromePrefs -Encoding UTF8
+        Write-Host "  Wrote Chrome preferences to $profileDir" -ForegroundColor DarkGray
+    }
+}
+
 # === LAUNCH CASHIER on Screen 1 ===
 Write-Host "Launching Cashier on Screen 1..." -ForegroundColor Cyan
 
@@ -86,6 +110,14 @@ $cashierArgs = @(
     "--noerrdialogs",
     "--disable-infobars",
     "--disable-session-crashed-bubble",
+    "--disable-translate",
+    "--no-first-run",
+    "--lang=nl",
+    "--disable-features=Translate,TranslateUI,PasswordManager,AutofillServerCommunication",
+    "--disable-client-side-phishing-detection",
+    "--disable-save-password-bubble",
+    "--disable-popup-blocking",
+    "--password-store=basic",
     "--user-data-dir=`"$cashierProfile`"",
     "--window-position=$($s1.X),$($s1.Y)",
     "--window-size=$($s1.Width),$($s1.Height)",
@@ -107,6 +139,14 @@ $customerArgs = @(
     "--noerrdialogs",
     "--disable-infobars",
     "--disable-session-crashed-bubble",
+    "--disable-translate",
+    "--no-first-run",
+    "--lang=nl",
+    "--disable-features=Translate,TranslateUI,PasswordManager,AutofillServerCommunication",
+    "--disable-client-side-phishing-detection",
+    "--disable-save-password-bubble",
+    "--disable-popup-blocking",
+    "--password-store=basic",
     "--user-data-dir=`"$customerProfile`"",
     "--window-position=$($s2.X),$($s2.Y)",
     "--window-size=$($s2.Width),$($s2.Height)",

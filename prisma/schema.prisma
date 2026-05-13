@@ -9,14 +9,24 @@ datasource db {
   provider = "postgresql"
 }
 
+// User roles enum
+enum UserRole {
+  ADMIN
+  EMPLOYEE
+}
+
 // User authentication model
 model User {
-  id        String   @id @default(cuid())
-  username  String   @unique
-  password  String   // Store hashed password (use bcrypt)
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String    @id @default(cuid())
+  username       String    @unique
+  password       String    // Store hashed password (use bcrypt)
+  pin            String?   // PIN for POS login (4-6 digits, hashed with bcrypt)
+  name           String?
+  role           UserRole  @default(EMPLOYEE)
+  failedAttempts Int       @default(0) @map("failed_attempts")
+  lockedUntil    DateTime? @map("locked_until")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }
 
 // Products model
@@ -24,11 +34,19 @@ model Product {
   id              Int              @id @default(autoincrement())
   name            String
   ean             String?
+  conditionRegion String?          @map("condition_region")
+  brandSerie      String?          @map("brand_serie")
+  model           String?
+  storage         String?
+  color           String?
+  fullname        String?          @map("fullname")
+  sellingPrice    Float?           @map("selling_price")
   currentStock    Int              @default(0) @map("current_stock")
   minimalStock    Int?             @map("minimal_stock")
   purchaseDetails PurchaseDetail[] @relation("ProductToPurchaseDetail")
   orderDetails    OrderDetail[]    @relation("ProductToOrderDetail")
   stockMovements  StockMovement[]
+
 
   @@map("products")
 }
@@ -44,10 +62,12 @@ model Supplier {
 
 // Customers model
 model Customer {
-  id     Int     @id @default(autoincrement())
-  name   String
-  region String  @default("NL") // NL, EU, or Non-EU
-  orders Order[] @relation("CustomerToOrder")
+  id          Int     @id @default(autoincrement())
+  name        String
+  companyName String? @map("company_name")
+  location    String? // City
+  region      String  @default("NL") // NL, EU, or Non-EU
+  orders      Order[] @relation("CustomerToOrder")
 
   @@map("customers")
 }
@@ -56,6 +76,7 @@ model Customer {
 model Purchase {
   id              Int              @id @default(autoincrement())
   supplierId      Int              @map("supplier_id")
+  createdByUserId String?          @map("created_by_user_id")
   date            DateTime         @db.Timestamptz(6)
   supplier        Supplier         @relation("SupplierToPurchase", fields: [supplierId], references: [id])
   purchaseDetails PurchaseDetail[] @relation("PurchaseToPurchaseDetail")
@@ -79,13 +100,15 @@ model PurchaseDetail {
 
 // Orders model (customer orders)
 model Order {
-  id          Int           @id @default(autoincrement())
-  customerId  Int           @map("customer_id")
-  date        DateTime      @db.Timestamptz(6)
-  paymentType String        @map("payment_type") // "cash" or "factuur"
-  paidAmount  Float         @default(0) @map("paid_amount")
-  customer    Customer      @relation("CustomerToOrder", fields: [customerId], references: [id])
-  orderDetails OrderDetail[] @relation("OrderToOrderDetail")
+  id              Int           @id @default(autoincrement())
+  customerId      Int           @map("customer_id")
+  createdByUserId String?       @map("created_by_user_id")
+  isPosOrder      Boolean       @default(false) @map("is_pos_order")
+  date            DateTime      @db.Timestamptz(6)
+  paymentType     String        @map("payment_type") // "cash" or "factuur"
+  paidAmount      Float         @default(0) @map("paid_amount")
+  customer        Customer      @relation("CustomerToOrder", fields: [customerId], references: [id])
+  orderDetails    OrderDetail[] @relation("OrderToOrderDetail")
 
   @@map("orders")
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
@@ -14,6 +14,10 @@ export default function LoginPage() {
     e.preventDefault()
     setError('')
     setIsLoading(true)
+    
+    // Check if there's a redirect parameter
+    const params = new URLSearchParams(window.location.search)
+    const redirectUrl = params.get('redirect')
     
     console.log('Starting login with:', username)
     
@@ -39,8 +43,12 @@ export default function LoginPage() {
       // Store user data in localStorage
       localStorage.setItem('user', JSON.stringify(data.user))
       
-      // Redirect to dashboard
-      router.push('/dashboard')
+      // Redirect to original URL if available, otherwise to dashboard
+      if (redirectUrl) {
+        router.push(redirectUrl)
+      } else {
+        router.push('/dashboard')
+      }
     } catch (err) {
       console.error('Login error:', err)
       setError('An error occurred. Please try again.')
@@ -116,7 +124,16 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-8 text-center text-xs text-slate-500 dark:text-slate-400">
+          <div className="mt-6 text-center">
+            <button
+              onClick={() => router.push('/pos/login')}
+              className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+            >
+              POS Employee Login →
+            </button>
+          </div>
+
+          <div className="mt-4 text-center text-xs text-slate-500 dark:text-slate-400">
             🔒 Secure admin access
           </div>
         </div>

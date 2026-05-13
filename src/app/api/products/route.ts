@@ -56,18 +56,43 @@ export async function GET() {
 // POST create new product
 export async function POST(request: Request) {
   try {
-    const { name, ean, stock, minimalStock } = await request.json()
+    const {
+      name,
+      ean,
+      stock,
+      currentStock,
+      minimalStock,
+      sellingPrice,
+      conditionRegion,
+      brandSerie,
+      model,
+      storage,
+      color,
+    } = await request.json()
 
-    console.log('Creating product:', { name, ean, stock, minimalStock })
+    const rawStock = currentStock ?? stock
 
-    if (!name || stock === undefined || stock === '') {
+    console.log('Creating product:', {
+      name,
+      ean,
+      currentStock: rawStock,
+      minimalStock,
+      sellingPrice,
+      conditionRegion,
+      brandSerie,
+      model,
+      storage,
+      color,
+    })
+
+    if (!name || rawStock === undefined || rawStock === '') {
       return NextResponse.json(
         { error: 'Name and stock are required' },
         { status: 400 }
       )
     }
 
-    const stockValue = parseInt(stock, 10)
+    const stockValue = parseInt(rawStock, 10)
     if (isNaN(stockValue)) {
       return NextResponse.json(
         { error: 'Stock must be a valid number' },
@@ -83,10 +108,34 @@ export async function POST(request: Request) {
       }
     }
 
+    let sellingPriceValue = null
+    if (sellingPrice !== undefined && sellingPrice !== null && sellingPrice !== '') {
+      const parsed = parseFloat(sellingPrice)
+      if (isNaN(parsed)) {
+        return NextResponse.json(
+          { error: 'Selling price must be a valid number' },
+          { status: 400 }
+        )
+      }
+      sellingPriceValue = parsed
+    }
+
+    const normalizeText = (value: unknown): string | null => {
+      if (typeof value !== 'string') return null
+      const trimmed = value.trim()
+      return trimmed ? trimmed : null
+    }
+
     const product = await prisma.product.create({
       data: {
         name: name.trim(),
         ean: ean && ean.trim() ? ean.trim() : null,
+        conditionRegion: normalizeText(conditionRegion),
+        brandSerie: normalizeText(brandSerie),
+        model: normalizeText(model),
+        storage: normalizeText(storage),
+        color: normalizeText(color),
+        sellingPrice: sellingPriceValue,
         currentStock: stockValue,
         minimalStock: minimalStockValue,
       },

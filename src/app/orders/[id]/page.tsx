@@ -3,10 +3,16 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { formatPrice } from '@/lib/formatPrice'
-
+import { requireAdmin } from '@/lib/auth'
 interface Customer {
   id: number
   name: string
+}
+
+interface AppUser {
+  id: string
+  username: string
+  name: string | null
 }
 
 interface Product {
@@ -37,6 +43,7 @@ interface Order {
   id: number
   customerId: number
   customer: Customer
+  createdByUserId?: string | null
   date: string
   paymentType: string
   paidAmount: number
@@ -50,6 +57,7 @@ export default function EditOrderPage() {
   
   const [order, setOrder] = useState<Order | null>(null)
   const [customers, setCustomers] = useState<Customer[]>([])
+  const [usersById, setUsersById] = useState<Record<string, string>>({})
   const [products, setProducts] = useState<Product[]>([])
   const [customerId, setCustomerId] = useState('')
   const [date, setDate] = useState('')
@@ -63,14 +71,15 @@ export default function EditOrderPage() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const userData = localStorage.getItem('user')
-    if (!userData) {
-      router.push('/')
+    try {
+      requireAdmin()
+    } catch {
       return
     }
     
     fetchOrder()
     fetchCustomers()
+    fetchUsers()
     fetchProducts()
   }, [router, orderId])
 
@@ -115,6 +124,27 @@ export default function EditOrderPage() {
     } catch (error) {
       console.error('Error fetching customers:', error)
     }
+  }
+
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch('/api/users')
+      if (response.ok) {
+        const data: AppUser[] = await response.json()
+        setUsersById(
+          Object.fromEntries(
+            data.map((user) => [user.id, (user.name?.trim() || user.username).trim()])
+          )
+        )
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error)
+    }
+  }
+
+  const getUserDisplayName = (userId?: string | null) => {
+    if (!userId) return '-'
+    return usersById[userId] || userId
   }
 
   const fetchProducts = async () => {
@@ -574,6 +604,15 @@ export default function EditOrderPage() {
                   <option value="cash">Cash</option>
                   <option value="factuur">Factuur</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Added By
+                </label>
+                <div className="w-full px-4 py-3 bg-slate-100/80 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white shadow-sm">
+                  {getUserDisplayName(order?.createdByUserId)}
+                </div>
               </div>
             </div>
           </div>

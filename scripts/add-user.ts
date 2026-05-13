@@ -40,10 +40,26 @@ async function addUser() {
     const username = await question('Username: ')
     const name = await question('Full Name (optional): ')
     const password = await question('Password: ')
+    const roleInput = await question('Role (ADMIN/EMPLOYEE) [EMPLOYEE]: ')
+    const pinInput = await question('PIN for POS login (4-6 digits, optional): ')
 
     if (!username || !password) {
       console.error('\nError: Username and password are required!')
       process.exit(1)
+    }
+
+    // Validate and set role
+    const role = roleInput.toUpperCase() === 'ADMIN' ? 'ADMIN' : 'EMPLOYEE'
+
+    // Validate PIN if provided
+    let hashedPin = null
+    if (pinInput && pinInput.trim()) {
+      if (!/^\d{4,6}$/.test(pinInput.trim())) {
+        console.error('\nError: PIN must be 4-6 digits!')
+        process.exit(1)
+      }
+      const saltRounds = 10
+      hashedPin = await bcrypt.hash(pinInput.trim(), saltRounds)
     }
 
     // Hash the password
@@ -55,7 +71,9 @@ async function addUser() {
       data: {
         username,
         name: name || null,
-        password: hashedPassword
+        password: hashedPassword,
+        pin: hashedPin,
+        role: role
       }
     })
 
@@ -63,6 +81,8 @@ async function addUser() {
     console.log(`  ID: ${user.id}`)
     console.log(`  Username: ${user.username}`)
     console.log(`  Name: ${user.name || 'N/A'}`)
+    console.log(`  Role: ${user.role}`)
+    console.log(`  PIN: ${hashedPin ? 'Set ✓' : 'Not set'}`)
     console.log(`  Created: ${user.createdAt}\n`)
 
   } catch (error: any) {
