@@ -16,11 +16,15 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Set a dummy DATABASE_URL for Prisma to generate client during build
-ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
-
-# Generate Prisma Client
+# Generate Prisma Client (DATABASE_URL injected by Coolify as build arg)
 RUN npx prisma generate
+
+# Run migrations against the real database before build
+# DATABASE_URL is available here via Coolify's --build-arg injection
+RUN npx prisma migrate deploy
+
+# Dummy URL for Next.js build (static page generation doesn't need a live DB)
+ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
 
 # Build Next.js
 RUN npm run build
@@ -38,12 +42,6 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
-# Prisma CLI + schema + migrations needed for migrate deploy at startup
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/valibot ./node_modules/valibot
-
 USER nextjs
 
 EXPOSE 3000
@@ -51,4 +49,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["sh", "-c", "node node_modules/prisma/build/index.js migrate deploy && node server.js"]
+CMD ["node", "server.js"]
