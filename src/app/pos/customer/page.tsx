@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 interface CartItem {
@@ -21,7 +21,7 @@ interface POSMessage {
   timestamp: number;
 }
 
-export default function CustomerDisplayPage() {
+function CustomerDisplay() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('session');
   const [cart, setCart] = useState<CartData>({ items: [], total: 0 });
@@ -31,38 +31,29 @@ export default function CustomerDisplayPage() {
   useEffect(() => {
     if (!sessionId) return;
 
-    // Listen for fullscreen request from opener window
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === 'request-fullscreen') {
-        document.documentElement.requestFullscreen?.().catch(() => {
-          // Fullscreen blocked - show button instead
-        });
+        document.documentElement.requestFullscreen?.().catch(() => {});
       }
     };
     window.addEventListener('message', handleMessage);
 
-    // Try to go fullscreen on mount
     const enterFullscreen = async () => {
       try {
         await document.documentElement.requestFullscreen();
         setIsFullscreen(true);
       } catch {
         // Fullscreen not allowed or not supported
-        // User will need to click the fullscreen button
       }
     };
-    
-    // Small delay to ensure page is ready
     setTimeout(enterFullscreen, 100);
 
-    // Set up BroadcastChannel
     const channelName = `pos-${sessionId}`;
     const channel = new BroadcastChannel(channelName);
     setConnected(true);
 
     channel.onmessage = (event: MessageEvent<POSMessage>) => {
       const message = event.data;
-      
       if (message.type === 'cart-update' && message.data) {
         setCart(message.data);
       } else if (message.type === 'clear-cart') {
@@ -103,7 +94,6 @@ export default function CustomerDisplayPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white p-8 flex flex-col">
-      {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
@@ -121,7 +111,6 @@ export default function CustomerDisplayPage() {
         </button>
       </div>
 
-      {/* Cart Items */}
       <div className="flex-1 overflow-auto">
         {cart.items.length === 0 ? (
           <div className="flex items-center justify-center h-full">
@@ -159,7 +148,6 @@ export default function CustomerDisplayPage() {
         )}
       </div>
 
-      {/* Footer - Total */}
       <div className="mt-8 pt-8 border-t-2 border-white/20">
         <div className="max-w-4xl mx-auto flex justify-between items-center">
           <div className="text-gray-400 text-xl">
@@ -174,12 +162,23 @@ export default function CustomerDisplayPage() {
         </div>
       </div>
 
-      {/* Thank You Message */}
       {cart.items.length > 0 && (
         <div className="mt-8 text-center">
           <p className="text-xl text-gray-500">Bedankt voor uw bestelling!</p>
         </div>
       )}
     </div>
+  );
+}
+
+export default function CustomerDisplayPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black flex items-center justify-center text-white">
+        <p className="text-gray-400">Laden...</p>
+      </div>
+    }>
+      <CustomerDisplay />
+    </Suspense>
   );
 }
