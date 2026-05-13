@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { Suspense, useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { usePOSChannel } from '@/hooks/usePOSChannel';
 
@@ -24,7 +24,7 @@ const SAMPLE_PRODUCTS: Product[] = [
   { id: '6', name: 'Chocolade', price: 2.20, category: 'Snacks' },
 ];
 
-export default function CashierPage() {
+function CashierContent() {
   const searchParams = useSearchParams();
   const [sessionId, setSessionId] = useState<string>('');
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -247,5 +247,17 @@ export default function CashierPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CashierPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <p className="text-gray-500">Laden...</p>
+      </div>
+    }>
+      <CashierContent />
+    </Suspense>
   );
 }
